@@ -132,6 +132,22 @@ async function quickSync() {
   const changed = applyFixtures(fixtures);
   for (const id of changed) recalcMatch(id);
   if (standingGroups.length) applyStandings(standingGroups);
+
+  // Fetch goalscorers for live matches and recently changed matches
+  if (typeof provider.fetchMatchSummary === 'function') {
+    const targets = db.prepare(
+      "SELECT id, ext_id FROM matches WHERE status = 'live' OR (status = 'finished' AND id IN (" +
+      (changed.length ? changed.map(() => '?').join(',') : 'SELECT 0') + "))"
+    ).all(...changed);
+    await Promise.all(targets.map(async (m) => {
+      if (!m.ext_id?.startsWith('espn-')) return;
+      const goals = await provider.fetchMatchSummary(m.ext_id.replace('espn-', ''));
+      if (goals !== null) {
+        db.prepare("UPDATE matches SET goals_json = ? WHERE id = ?").run(JSON.stringify(goals), m.id);
+      }
+    }));
+  }
+
   return { provider: provider.name, fixtures: fixtures.length, changed: changed.length };
 }
 

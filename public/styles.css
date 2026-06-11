@@ -250,6 +250,13 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
 .status-finished { background: #ecfdf3; color: var(--success); box-shadow: inset 0 0 0 1px #bbe7c9; }
 @keyframes pulse { 50% { opacity: .35; } }
 
+.scorers-row {
+  display: flex; justify-content: space-between; gap: 8px;
+  padding: 4px 0 0; font-size: .7rem; color: var(--muted-foreground); line-height: 1.4;
+}
+.scorers-side { flex: 1; }
+.scorers-right { text-align: right; }
+
 .match-actions {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 10px 14px; border-top: 1px solid var(--border); background: var(--card);

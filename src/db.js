@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS matches (
   status TEXT NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming','live','finished')),
   score_a INTEGER,
   score_b INTEGER,
+  prediction_override INTEGER DEFAULT 0,
+  goals_json TEXT,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -83,5 +85,11 @@ CREATE INDEX IF NOT EXISTS idx_predictions_match ON predictions(match_id);
 CREATE INDEX IF NOT EXISTS idx_predictions_employee ON predictions(employee_id);
 CREATE INDEX IF NOT EXISTS idx_standings_group ON standings(group_name);
 `);
+
+// Migrate existing DBs: add columns introduced after initial deploy
+[
+  'ALTER TABLE matches ADD COLUMN prediction_override INTEGER DEFAULT 0',
+  'ALTER TABLE matches ADD COLUMN goals_json TEXT',
+].forEach(sql => { try { db.exec(sql); } catch {} });
 
 module.exports = db;

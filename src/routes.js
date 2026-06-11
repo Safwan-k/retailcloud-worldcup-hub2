@@ -61,6 +61,8 @@ router.get('/teams/:id/supporters', (req, res) => {
 const MATCH_SELECT = `
   SELECT m.id, m.ext_id, m.kickoff, m.stage, m.group_name AS groupName, m.status,
          m.score_a AS scoreA, m.score_b AS scoreB,
+         m.prediction_override AS predictionOverride,
+         m.goals_json AS goalsJson,
          ta.id AS teamAId, ta.name AS teamAName, ta.flag AS teamAFlag, ta.code AS teamACode,
          tb.id AS teamBId, tb.name AS teamBName, tb.flag AS teamBFlag, tb.code AS teamBCode
   FROM matches m
@@ -76,7 +78,7 @@ router.get('/matches', (req, res) => {
   res.json({
     matches: matches.map(m => ({
       ...m,
-      locked: m.status !== 'upcoming' || new Date(m.kickoff) <= new Date(),
+      locked: !m.predictionOverride && (m.status !== 'upcoming' || new Date(m.kickoff) <= new Date()),
       myPrediction: predByMatch[m.id]
         ? { winner: predByMatch[m.id].winner, scoreA: predByMatch[m.id].score_a, scoreB: predByMatch[m.id].score_b, points: predByMatch[m.id].points }
         : null,
@@ -94,10 +96,11 @@ router.post('/predictions', (req, res) => {
   refreshStatuses();
   const fresh = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
   const kickoff = new Date(fresh.kickoff).getTime();
-  const locked =
+  const locked = !fresh.prediction_override && (
     fresh.status === 'finished' ||
     (fresh.status === 'live' && Date.now() - kickoff > 45 * 60 * 1000) ||
-    (fresh.status === 'upcoming' && kickoff - Date.now() <= 5 * 60 * 1000);
+    (fresh.status === 'upcoming' && kickoff - Date.now() <= 5 * 60 * 1000)
+  );
   if (locked) {
     return res.status(403).json({ error: 'Predictions locked — closes 5 min before kickoff (live until halftime).' });
   }
@@ -281,6 +284,15 @@ router.post('/admin/matches/:id/result', (req, res) => {
   db.prepare(`UPDATE matches SET score_a = ?, score_b = ?, status = ?, updated_at = datetime('now') WHERE id = ?`)
     .run(a, b, st, match.id);
   recalcMatch(match.id);
+  res.json({ ok: true });
+});
+
+router.post('/admin/matches/:id/unlock', (req, res) => {
+  const { unlock } = req.body || {};
+  const match = db.prepare('SELECT id FROM matches WHERE id = ?').get(req.params.id);
+  if (!match) return res.status(404).json({ error: 'Match not found.' });
+  db.prepare(`UPDATE matches SET prediction_override = ?, updated_at = datetime('now') WHERE id = ?`)
+    .run(unlock ? 1 : 0, match.id);
   res.json({ ok: true });
 });
 

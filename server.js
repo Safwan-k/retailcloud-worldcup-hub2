@@ -4,7 +4,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const routes = require('./src/routes');
-const { seedIfEmpty, refreshStatuses } = require('./src/sports/sync');
+const { seedIfEmpty, syncFromProvider, refreshStatuses } = require('./src/sports/sync');
 const liveAgent = require('./src/sports/liveAgent');
 
 const app = express();
@@ -17,6 +17,10 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 
 seedIfEmpty();
 refreshStatuses();
+// Auto-sync all fixtures from ESPN on startup (async, non-blocking)
+syncFromProvider().then(r => {
+  console.log(`[startup] synced ${r.fixtures} fixtures from ${r.provider}`);
+}).catch(err => console.warn('[startup] sync failed:', err.message));
 
 // Live agent: adaptive background sync (fast while matches are live, slow when idle).
 // Disable with LIVE_AGENT=off (then sync is manual via Admin panel only).

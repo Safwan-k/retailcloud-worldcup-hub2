@@ -31,7 +31,9 @@
   }
 
   // Lock 5 min before kickoff; live matches stay open until ~halftime (45 min after kickoff)
+  // predictionOverride = admin can force-unlock any match
   function isMatchLocked(m) {
+    if (m.predictionOverride) return false;
     if (m.status === 'finished') return true;
     const kickoff = new Date(m.kickoff).getTime();
     if (m.status === 'live') return Date.now() - kickoff > 45 * 60 * 1000;
@@ -177,6 +179,20 @@
     const center = m.status === 'upcoming'
       ? `<div class="vs">VS</div><div class="kick">${fmtTime(m.kickoff)}</div>`
       : `<div class="score"><span>${m.scoreA ?? 0}</span><span class="score-sep">–</span><span>${m.scoreB ?? 0}</span></div>`;
+
+    // Goalscorers row
+    let scorersHtml = '';
+    if (m.status !== 'upcoming' && m.goalsJson) {
+      try {
+        const goals = JSON.parse(m.goalsJson);
+        if (goals.length) {
+          const a = goals.filter(g => g.side === 'A').map(g => `${esc(g.player)} ${esc(g.minute)}`).join(', ');
+          const b = goals.filter(g => g.side === 'B').map(g => `${esc(g.player)} ${esc(g.minute)}`).join(', ');
+          scorersHtml = `<div class="scorers-row"><span class="scorers-side">${a}</span><span class="scorers-side scorers-right">${b}</span></div>`;
+        }
+      } catch {}
+    }
+
     let actions = '';
     if (withActions) {
       const p = m.myPrediction;
@@ -202,6 +218,7 @@
             <div class="match-center">${center}</div>
             <div class="team"><span class="flag">${flagHtml(m.teamBFlag)}</span><span class="tname">${esc(m.teamBName)}</span></div>
           </div>
+          ${scorersHtml}
         </div>
         ${actions}
       </div>`;
@@ -234,7 +251,7 @@
         <input id="predB" type="number" min="0" max="20" inputmode="numeric" value="${p ? p.scoreB : ''}" placeholder="0">
       </div>
       <p class="modal-note">
-        Correct winner/draw = 3 pts · Exact score = +5 bonus. Locks at kickoff.
+        Right result: <b>3 pts</b> · Nail the exact score: <b>8 pts</b>
       </p>
       <div class="modal-actions">
         <button class="btn ghost" id="predCancel">Cancel</button>
@@ -424,7 +441,7 @@
   async function renderLeaderboard() {
     const el = $('#view-leaderboard');
     el.innerHTML = `
-      <header class="page-head"><h2>Leaderboard</h2><p>Winner/draw = 3 pts · exact score = +5 bonus.</p></header>
+      <header class="page-head"><h2>Leaderboard</h2><p>Right result: 3 pts · Exact score: 8 pts</p></header>
       <div class="tabs">
         <button class="tab ${lbTab === 'overall' ? 'active' : ''}" data-t="overall"><ion-icon name="globe"></ion-icon> Overall</button>
         <button class="tab ${lbTab === 'team' ? 'active' : ''}" data-t="team"><ion-icon name="flag"></ion-icon> My team fans</button>
@@ -577,7 +594,7 @@
     }
     // matches tab — manual result editing
     const { matches } = await api('/matches');
-    body.innerHTML = `<table class="admin"><tr><th>Match</th><th>Kickoff</th><th>Status</th><th>Result</th><th></th></tr>
+    body.innerHTML = `<table class="admin"><tr><th>Match</th><th>Kickoff</th><th>Status</th><th>Result</th><th></th><th>Predict</th></tr>
       ${matches.map(m => `<tr>
         <td>${esc(m.teamAName)} v ${esc(m.teamBName)}</td>
         <td>${new Date(m.kickoff).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
@@ -587,6 +604,7 @@
           <input type="number" min="0" id="rb-${m.id}" value="${m.scoreB ?? ''}">
         </div></td>
         <td><button class="btn small" data-finish="${m.id}">Set FT</button></td>
+        <td><button class="btn small ${m.predictionOverride ? 'orange' : 'ghost'}" data-unlock="${m.id}" data-state="${m.predictionOverride ? '1' : '0'}">${m.predictionOverride ? 'Unlocked' : 'Unlock'}</button></td>
       </tr>`).join('')}</table>`;
     body.querySelectorAll('[data-finish]').forEach(btn => {
       btn.onclick = async () => {
@@ -597,6 +615,17 @@
           await api(`/admin/matches/${id}/result`, { method: 'POST', body: { scoreA: Number(a), scoreB: Number(b), status: 'finished' } });
           toast('Result saved, points updated');
           renderAdmin(); refreshMe();
+        } catch (e) { toast(e.message, true); }
+      };
+    });
+    body.querySelectorAll('[data-unlock]').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.unlock;
+        const unlock = btn.dataset.state !== '1';
+        try {
+          await api(`/admin/matches/${id}/unlock`, { method: 'POST', body: { unlock } });
+          toast(unlock ? 'Predictions unlocked' : 'Predictions re-locked');
+          renderAdmin();
         } catch (e) { toast(e.message, true); }
       };
     });

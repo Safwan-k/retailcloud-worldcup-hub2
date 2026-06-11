@@ -187,4 +187,25 @@ async function fetchStandings() {
   return groups;
 }
 
-module.exports = { name: 'espn', fetchTeams, fetchFixtures, fetchRecentFixtures, fetchStandings };
+async function fetchMatchSummary(espnEventId) {
+  try {
+    const data = await getJson(`${BASE}/summary?event=${espnEventId}`);
+    const comp = data.header?.competitions?.[0];
+    const homeId = comp?.competitors?.find(c => c.homeAway === 'home')?.team?.id;
+    const awayId = comp?.competitors?.find(c => c.homeAway === 'away')?.team?.id;
+    const goals = [];
+    for (const play of (data.scoringPlays || [])) {
+      const minute = play.clock?.displayValue || '?';
+      const teamId = String(play.team?.id || '');
+      const player = play.participants?.[0]?.athlete?.shortName
+        || play.participants?.[0]?.athlete?.displayName || '';
+      const side = teamId === String(homeId) ? 'A' : teamId === String(awayId) ? 'B' : '?';
+      if (player) goals.push({ minute, player, side });
+    }
+    return goals;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { name: 'espn', fetchTeams, fetchFixtures, fetchRecentFixtures, fetchStandings, fetchMatchSummary };
