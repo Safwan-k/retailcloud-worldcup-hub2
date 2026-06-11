@@ -317,7 +317,8 @@
   // ---------- Home ----------
   async function renderHome() {
     const el = $('#view-home');
-    const [feed, { predictions }] = await Promise.all([api('/feed'), api('/predictions/mine')]);
+    const localDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local tz
+    const [feed, { predictions }] = await Promise.all([api(`/feed?date=${localDate}`), api('/predictions/mine')]);
     const preds = Object.fromEntries(predictions.map(p => [p.matchId, p]));
     const withMyPred = (m) => ({
       ...m,
