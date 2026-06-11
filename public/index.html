@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Retailcloud World Cup Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@7/dist/ionicons/ionicons.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Login view -->
+    <section id="view-login" class="view login-view hidden">
+      <div class="login-card">
+        <div class="login-badge"><ion-icon name="trophy"></ion-icon></div>
+        <p class="login-kicker">World Cup 2026</p>
+        <h1>Retailcloud World Cup Hub</h1>
+        <p class="login-sub">Predict matches. Score points. Beat your teammates.</p>
+        <div id="googleBtn" class="google-btn-wrap"></div>
+        <p class="login-note">Only registered Retailcloud employees can access this contest.</p>
+        <p id="loginError" class="error hidden"></p>
+      </div>
+    </section>
+
+    <!-- Choose favorite team view -->
+    <section id="view-pickteam" class="view pickteam-view hidden">
+      <div class="pickteam-topbar">
+        <button id="pickBack" class="pick-back-btn hidden"><ion-icon name="arrow-back"></ion-icon> Back</button>
+        <h2>Pick your team</h2>
+      </div>
+      <p class="pickteam-sub">Choose your favorite World Cup team. You'll follow their journey all tournament.</p>
+      <div class="pick-extras">
+        <label>Location
+          <input id="pickLocation" type="text" placeholder="e.g. Calicut / Bay Area" />
+        </label>
+      </div>
+      <div id="teamGrid" class="team-grid"></div>
+    </section>
+
+    <!-- App shell -->
+    <div id="shell" class="hidden">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark"><ion-icon name="football"></ion-icon></span> World Cup Hub</div>
+        <div class="topbar-right">
+          <span id="myPoints" class="points-pill"></span>
+          <div class="avatar-wrap">
+            <button id="avatarBtn" class="avatar-btn" aria-label="Account menu">
+              <img id="myAvatar" class="avatar" alt="" />
+            </button>
+            <div id="avatarMenu" class="avatar-menu hidden">
+              <a href="#profile" data-menu="profile"><ion-icon name="person"></ion-icon> My profile</a>
+              <a href="#admin" data-menu="admin" id="menuAdmin" class="hidden"><ion-icon name="settings"></ion-icon> Admin settings</a>
+              <div class="avatar-menu-sep"></div>
+              <button id="menuLogout"><ion-icon name="log-out"></ion-icon> Sign out</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main">
+        <section id="view-home" class="view hidden"></section>
+        <section id="view-matches" class="view hidden"></section>
+        <section id="view-leaderboard" class="view hidden"></section>
+        <section id="view-supporters" class="view hidden"></section>
+        <section id="view-profile" class="view hidden"></section>
+        <section id="view-admin" class="view hidden"></section>
+      </main>
+
+      <nav class="bottomnav">
+        <a href="#home" data-nav="home"><ion-icon name="home"></ion-icon><span>Home</span></a>
+        <a href="#matches" data-nav="matches"><ion-icon name="calendar"></ion-icon><span>Matches</span></a>
+        <a href="#leaderboard" data-nav="leaderboard"><ion-icon name="trophy"></ion-icon><span>Ranks</span></a>
+        <a href="#supporters" data-nav="supporters"><ion-icon name="flag"></ion-icon><span>Teams</span></a>
+      </nav>
+    </div>
+
+    <!-- Prediction modal -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-card" id="modalCard"></div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

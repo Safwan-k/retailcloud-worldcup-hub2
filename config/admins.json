@@ -1,0 +1,6 @@
+{
+  "comment": "Admin allowlist. Admins must also be in employees.json.",
+  "admins": [
+    "safwan@retailcloud.com"
+  ]
+}
