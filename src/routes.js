@@ -190,10 +190,12 @@ router.get('/feed', (req, res) => {
   const live = db.prepare(`${MATCH_SELECT} WHERE m.status = 'live' ORDER BY m.kickoff`).all();
   const liveIds = new Set(live.map(m => m.id));
   // today = upcoming matches today only (live ones already shown in live section)
+  // Use substr() for date comparison — SQLite date() may return NULL on ISO strings with .000Z
+  const todayUtc = new Date().toISOString().slice(0, 10);
   const today = db.prepare(`${MATCH_SELECT}
     WHERE m.status = 'upcoming'
-    AND date(m.kickoff, 'localtime') = date('now', 'localtime')
-    ORDER BY m.kickoff`).all().filter(m => !liveIds.has(m.id));
+    AND substr(m.kickoff, 1, 10) = ?
+    ORDER BY m.kickoff`).all(todayUtc).filter(m => !liveIds.has(m.id));
   const finished = db.prepare(`${MATCH_SELECT} WHERE m.status = 'finished' ORDER BY m.kickoff DESC LIMIT 6`).all();
   const top5 = db.prepare(`
     SELECT e.name, e.department, e.total_points AS totalPoints, t.flag AS favoriteTeamFlag

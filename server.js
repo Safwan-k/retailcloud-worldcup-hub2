@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const routes = require('./src/routes');
+const db = require('./src/db');
 const { seedIfEmpty, syncFromProvider, refreshStatuses } = require('./src/sports/sync');
 const liveAgent = require('./src/sports/liveAgent');
 
@@ -16,6 +17,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 seedIfEmpty();
+// Immediately remove seed placeholders so ESPN data loads clean (no duplicates)
+db.prepare("DELETE FROM matches WHERE ext_id LIKE 'seed-%'").run();
 refreshStatuses();
 // Auto-sync all fixtures from ESPN on startup (async, non-blocking)
 syncFromProvider().then(r => {

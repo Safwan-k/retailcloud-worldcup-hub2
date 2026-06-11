@@ -165,10 +165,11 @@ function seedIfEmpty() {
 
 // Flip upcoming→live at kickoff even without API polling.
 function refreshStatuses() {
+  const now = new Date().toISOString();
   db.prepare(`
     UPDATE matches SET status = 'live', updated_at = datetime('now')
-    WHERE status = 'upcoming' AND datetime(kickoff) <= datetime('now')
-  `).run();
+    WHERE status = 'upcoming' AND kickoff <= ?
+  `).run(now);
 }
 
 module.exports = { syncFromProvider, quickSync, seedIfEmpty, refreshStatuses };
