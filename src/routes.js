@@ -44,7 +44,9 @@ router.patch('/me', (req, res) => {
 router.get('/teams', (req, res) => {
   const teams = db.prepare(`
     SELECT t.*, (SELECT COUNT(*) FROM employees e WHERE e.favorite_team_id = t.id) AS supporters
-    FROM teams t ORDER BY t.group_name, t.name
+    FROM teams t
+    WHERE t.ext_id LIKE 'espn-team-%'
+    ORDER BY t.group_name, t.name
   `).all();
   res.json({ teams });
 });

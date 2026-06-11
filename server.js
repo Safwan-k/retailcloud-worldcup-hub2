@@ -17,8 +17,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 seedIfEmpty();
-// Immediately remove seed placeholders so ESPN data loads clean (no duplicates)
-db.prepare("DELETE FROM matches WHERE ext_id LIKE 'seed-%'").run();
+// Remove seed/placeholder matches (seed-* and non-ESPN matches)
+db.prepare("DELETE FROM matches WHERE ext_id IS NOT NULL AND ext_id NOT LIKE 'espn-%'").run();
+// Remove placeholder/seed teams not picked by anyone and not from ESPN
+db.prepare(`
+  DELETE FROM teams
+  WHERE (ext_id IS NULL OR ext_id NOT LIKE 'espn-team-%')
+  AND id NOT IN (SELECT favorite_team_id FROM employees WHERE favorite_team_id IS NOT NULL)
+`).run();
 refreshStatuses();
 // Auto-sync all fixtures from ESPN on startup (async, non-blocking)
 syncFromProvider().then(r => {

@@ -473,7 +473,7 @@
         <div class="lb-row" data-team="${t.id}" style="cursor:pointer">
           <span class="lb-avatar" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;overflow:hidden">${flagHtml(t.flag)}</span>
           <div class="lb-main"><div class="lb-name">${esc(t.name)}</div>
-            <div class="lb-sub">${t.group_name ? `Group ${esc(t.group_name)}` : ''}</div></div>
+            <div class="lb-sub">${t.supporters} fan${t.supporters === 1 ? '' : 's'}</div></div>
           <div class="lb-pts">${t.supporters} fans</div>
         </div>
         <div class="hidden" id="sup-${t.id}" style="margin:-4px 0 10px 44px"></div>

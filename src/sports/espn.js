@@ -43,12 +43,18 @@ function mapStatus(ev) {
   return 'upcoming';
 }
 
+const PLACEHOLDER_RE = /\b(winner|place|loser|tbd|semifinal|quarterfinal|round of)\b/i;
+
 function parseEvent(ev) {
   const comp = ev.competitions?.[0];
   if (!comp) return null;
   const home = comp.competitors?.find(c => c.homeAway === 'home');
   const away = comp.competitors?.find(c => c.homeAway === 'away');
   if (!home || !away) return null;
+  // Skip placeholder knockout matches (teams not yet determined)
+  const hn = home.team?.displayName || '';
+  const an = away.team?.displayName || '';
+  if (PLACEHOLDER_RE.test(hn) || PLACEHOLDER_RE.test(an)) return null;
 
   const status = mapStatus(ev);
   const scoreA = status !== 'upcoming' ? (parseInt(home.score, 10) || 0) : null;
@@ -144,6 +150,7 @@ async function fetchTeams() {
     for (const entry of (group.standings?.entries || [])) {
       const t = entry.team;
       if (!t || seen.has(t.id)) continue;
+      if (PLACEHOLDER_RE.test(t.displayName || '')) continue;
       seen.add(t.id);
       teams.push({
         extId:     `espn-team-${t.id}`,
