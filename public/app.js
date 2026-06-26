@@ -50,6 +50,7 @@
 
   const fmtTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const fmtDate = (iso) => new Date(iso).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+  const fmtShortDate = (iso) => new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
 
   // ---------- View switching ----------
   const VIEWS = ['login', 'pickteam', 'home', 'matches', 'leaderboard', 'supporters', 'profile', 'admin'];
@@ -174,11 +175,11 @@
   // ---------- Match card ----------
   function matchCard(m, { withActions = true } = {}) {
     const statusBadge = `<span class="status-badge status-${m.status}">${
-      m.status === 'live' ? 'Live' : m.status === 'finished' ? 'Full time' : fmtTime(m.kickoff)}</span>`;
+      m.status === 'live' ? 'Live' : m.status === 'finished' ? 'Full time' : `${fmtShortDate(m.kickoff)} · ${fmtTime(m.kickoff)}`}</span>`;
     // Score only renders for live/finished matches — upcoming always shows VS + kickoff.
     const penaltyHtml = m.penaltyA != null ? `<div class="penalty-score">pens ${m.penaltyA}–${m.penaltyB}</div>` : '';
     const center = m.status === 'upcoming'
-      ? `<div class="vs">VS</div><div class="kick">${fmtTime(m.kickoff)}</div>`
+      ? `<div class="vs">VS</div><div class="kick"><span class="kick-date">${fmtShortDate(m.kickoff)}</span>${fmtTime(m.kickoff)}</div>`
       : `<div class="score"><span>${m.scoreA ?? 0}</span><span class="score-sep">–</span><span>${m.scoreB ?? 0}</span></div>${penaltyHtml}`;
 
     // Goalscorers row
@@ -523,45 +524,82 @@
   async function renderMatches() {
     const el = $('#view-matches');
     el.innerHTML = `
-      <header class="page-head"><h2>Matches</h2><p>All World Cup fixtures. Predict before kickoff!</p></header>
+      <header class="page-head matches-head">
+        <div>
+          <h2>Matches</h2>
+          <p>All World Cup fixtures. Predict before kickoff!</p>
+        </div>
+        <div class="match-filter">
+          <button class="mf-btn${matchFilter==='all'?' active':''}" data-f="all">All</button>
+          <button class="mf-btn${matchFilter==='predicted'?' active':''}" data-f="predicted">Predicted</button>
+          <button class="mf-btn${matchFilter==='need'?' active':''}" data-f="need">Need to predict</button>
+          <button class="mf-btn${matchFilter==='results'?' active':''}" data-f="results">Results</button>
+        </div>
+      </header>
       <div id="matchesBody"></div>`;
     const body = $('#matchesBody');
-    {
-      const { matches } = await api('/matches');
-      if (!matches.length) {
-        body.innerHTML = '<div class="card empty">No matches yet. Admin needs to sync fixtures.</div>';
-        return;
-      }
 
-      // "Predict now" = only the soonest date that has unpredicted unlocked matches
-      const allNeedsPred = matches.filter(m => m.status === 'upcoming' && !m.locked && !m.myPrediction);
-      const nextPredDate = allNeedsPred.length ? fmtDate(allNeedsPred[0].kickoff) : null;
-      const needsPred = allNeedsPred.filter(m => fmtDate(m.kickoff) === nextPredDate);
-      const needsPredOther = allNeedsPred.filter(m => fmtDate(m.kickoff) !== nextPredDate);
-      const upcoming  = [...matches.filter(m => m.status === 'upcoming' && (m.locked || m.myPrediction)), ...needsPredOther];
-      upcoming.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
-      const finished  = matches.filter(m => m.status === 'finished');
+    const { matches } = await api('/matches');
+    if (!matches.length) {
+      body.innerHTML = '<div class="card empty">No matches yet. Admin needs to sync fixtures.</div>';
+      return;
+    }
 
-      function byDateGroup(ms, reverse = false) {
-        const map = {};
-        for (const m of ms) { const d = fmtDate(m.kickoff); (map[d] = map[d] || []).push(m); }
-        const entries = Object.entries(map);
-        if (reverse) entries.reverse();
-        return entries.map(([d, ms]) => `<div class="date-head">${d}</div>${ms.map(m => matchCard(m)).join('')}`).join('');
-      }
+    function byDateGroup(ms, reverse = false) {
+      const map = {};
+      for (const m of ms) { const d = fmtDate(m.kickoff); (map[d] = map[d] || []).push(m); }
+      const entries = Object.entries(map);
+      if (reverse) entries.reverse();
+      return entries.map(([d, ms]) => `<div class="date-head">${d}</div>${ms.map(m => matchCard(m)).join('')}`).join('');
+    }
 
+    function applyFilter(filter) {
+      matchFilter = filter;
+      el.querySelectorAll('.mf-btn').forEach(b => b.classList.toggle('active', b.dataset.f === filter));
       let html = '';
-      if (needsPred.length)
-        html += `<div class="section-label needs-pred-label"><ion-icon name="football"></ion-icon> Predict now <span class="pred-count">${needsPred.length}</span></div>${needsPred.map(m => matchCard(m)).join('')}`;
-      if (upcoming.length)
-        html += `<div class="section-label"><ion-icon name="calendar"></ion-icon>Upcoming</div>${byDateGroup(upcoming)}`;
-      if (finished.length)
-        html += `<div class="section-label"><ion-icon name="checkmark-done"></ion-icon>Results</div>${byDateGroup(finished, true)}`;
+
+      if (filter === 'all') {
+        const allNeedsPred = matches.filter(m => m.status === 'upcoming' && !m.locked && !m.myPrediction);
+        const nextPredDate = allNeedsPred.length ? fmtDate(allNeedsPred[0].kickoff) : null;
+        const needsPred = allNeedsPred.filter(m => fmtDate(m.kickoff) === nextPredDate);
+        const needsPredOther = allNeedsPred.filter(m => fmtDate(m.kickoff) !== nextPredDate);
+        const upcoming = [...matches.filter(m => m.status === 'upcoming' && (m.locked || m.myPrediction)), ...needsPredOther];
+        upcoming.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+        const finished = matches.filter(m => m.status === 'finished');
+        if (needsPred.length)
+          html += `<div class="section-label needs-pred-label"><ion-icon name="football"></ion-icon> Predict now <span class="pred-count">${needsPred.length}</span></div>${needsPred.map(m => matchCard(m)).join('')}`;
+        if (upcoming.length)
+          html += `<div class="section-label"><ion-icon name="calendar"></ion-icon>Upcoming</div>${byDateGroup(upcoming)}`;
+        if (finished.length)
+          html += `<div class="section-label"><ion-icon name="checkmark-done"></ion-icon>Results</div>${byDateGroup(finished, true)}`;
+      } else if (filter === 'predicted') {
+        const predicted = matches.filter(m => m.myPrediction);
+        predicted.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+        if (predicted.length)
+          html += `<div class="section-label"><ion-icon name="checkmark-circle"></ion-icon>Predicted</div>${byDateGroup(predicted)}`;
+        else
+          html = '<div class="card empty">No predictions yet.</div>';
+      } else if (filter === 'need') {
+        const need = matches.filter(m => m.status === 'upcoming' && !m.locked && !m.myPrediction);
+        if (need.length)
+          html += `<div class="section-label needs-pred-label"><ion-icon name="football"></ion-icon>Need to predict <span class="pred-count">${need.length}</span></div>${byDateGroup(need)}`;
+        else
+          html = '<div class="card empty">All caught up! No pending predictions.</div>';
+      } else if (filter === 'results') {
+        const finished = matches.filter(m => m.status === 'finished');
+        if (finished.length)
+          html += `<div class="section-label"><ion-icon name="checkmark-done"></ion-icon>Results</div>${byDateGroup(finished, true)}`;
+        else
+          html = '<div class="card empty">No results yet.</div>';
+      }
 
       body.innerHTML = html;
       bindPredictButtons(body, matches);
-      schedulePoll();
     }
+
+    el.querySelectorAll('.mf-btn').forEach(b => b.onclick = () => applyFilter(b.dataset.f));
+    applyFilter(matchFilter);
+    schedulePoll();
   }
 
   async function renderStandings(container) {
@@ -606,6 +644,7 @@
   }
 
   // ---------- Leaderboard ----------
+  let matchFilter = 'all';
   let lbTab = 'overall';
   async function renderLeaderboard() {
     const el = $('#view-leaderboard');

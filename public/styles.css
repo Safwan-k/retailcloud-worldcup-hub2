@@ -159,6 +159,10 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
 .page-head { margin: 6px 2px 18px; }
 .page-head h2 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; color: var(--primary); }
 .page-head p { margin: 0; color: var(--muted-foreground); font-size: .88rem; }
+.matches-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.match-filter { display: flex; gap: 4px; background: var(--muted); border-radius: .75rem; padding: 3px; flex-shrink: 0; margin-top: 2px; overflow-x: auto; max-width: 100%; }
+.mf-btn { border: 0; background: transparent; border-radius: .55rem; padding: 5px 11px; font-size: .75rem; font-weight: 600; color: var(--muted-foreground); white-space: nowrap; cursor: pointer; transition: background .15s, color .15s; }
+.mf-btn.active { background: var(--card); color: var(--primary); box-shadow: var(--shadow-sm); font-weight: 700; }
 
 .card {
   background: var(--card); border: 1px solid var(--border);
@@ -238,8 +242,9 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
 }
 .kick {
   font-size: .95rem; font-weight: 800; color: var(--primary);
-  font-variant-numeric: tabular-nums; margin-top: 2px;
+  font-variant-numeric: tabular-nums; margin-top: 2px; line-height: 1.2;
 }
+.kick-date { display: block; font-size: .7rem; font-weight: 600; color: var(--muted-foreground); letter-spacing: .01em; margin-bottom: 1px; }
 
 .status-badge {
   display: inline-flex; align-items: center; gap: 5px;
