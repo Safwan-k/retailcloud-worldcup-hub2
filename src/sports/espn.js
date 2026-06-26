@@ -60,6 +60,21 @@ function parseEvent(ev) {
   const scoreA = status !== 'upcoming' ? (parseInt(home.score, 10) || 0) : null;
   const scoreB = status !== 'upcoming' ? (parseInt(away.score, 10) || 0) : null;
 
+  // Penalty shootout scores — ESPN stores per-period linescores on each competitor
+  let penaltyA = null, penaltyB = null;
+  if (status !== 'upcoming') {
+    const findPenalty = (linescores) => (linescores || []).find(
+      ls => ls.period === 5 || ls.periodNumber === 5 ||
+            (ls.periodText || ls.periodType || '').toLowerCase().includes('pen')
+    );
+    const hp = findPenalty(home.linescores);
+    const ap = findPenalty(away.linescores);
+    if (hp != null && ap != null) {
+      penaltyA = parseInt(hp.value ?? hp.score, 10) || 0;
+      penaltyB = parseInt(ap.value ?? ap.score, 10) || 0;
+    }
+  }
+
   // Stage / group from season notes or competition notes
   const notes = comp.notes?.[0]?.text || '';
   const seasonSlug = ev.season?.slug || '';
@@ -91,6 +106,8 @@ function parseEvent(ev) {
     status,
     scoreA,
     scoreB,
+    penaltyA,
+    penaltyB,
   };
 }
 

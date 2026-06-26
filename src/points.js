@@ -3,16 +3,22 @@ const db = require('./db');
 const POINTS_CORRECT_OUTCOME = 3;
 const POINTS_EXACT_BONUS = 5;
 
-function outcome(scoreA, scoreB) {
+function outcome(scoreA, scoreB, penaltyA, penaltyB, stage) {
   if (scoreA > scoreB) return 'A';
   if (scoreA < scoreB) return 'B';
+  // Tied — use penalty scores for knockout stages
+  if (stage && stage !== 'Group Stage' && penaltyA != null && penaltyB != null) {
+    if (penaltyA > penaltyB) return 'A';
+    if (penaltyB > penaltyA) return 'B';
+  }
   return 'D';
 }
 
 function scorePrediction(pred, match) {
   if (match.status !== 'finished' || match.score_a == null || match.score_b == null) return null;
   let pts = 0;
-  if (pred.winner === outcome(match.score_a, match.score_b)) pts += POINTS_CORRECT_OUTCOME;
+  const act = outcome(match.score_a, match.score_b, match.penalty_a, match.penalty_b, match.stage);
+  if (pred.winner === act) pts += POINTS_CORRECT_OUTCOME;
   if (pred.score_a === match.score_a && pred.score_b === match.score_b) pts += POINTS_EXACT_BONUS;
   return pts;
 }

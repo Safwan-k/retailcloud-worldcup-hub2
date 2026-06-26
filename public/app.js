@@ -72,7 +72,7 @@
     const view = VIEWS.includes(hash) ? hash : 'home';
     if (view === 'admin' && !me.isAdmin) { location.hash = '#home'; return; }
     show(view);
-    ({ home: renderHome, matches: renderMatches, leaderboard: renderLeaderboard,
+    return ({ home: renderHome, matches: renderMatches, leaderboard: renderLeaderboard,
        supporters: renderSupporters, profile: renderProfile, admin: renderAdmin }[view])();
   }
   window.addEventListener('hashchange', route);
@@ -176,9 +176,10 @@
     const statusBadge = `<span class="status-badge status-${m.status}">${
       m.status === 'live' ? 'Live' : m.status === 'finished' ? 'Full time' : fmtTime(m.kickoff)}</span>`;
     // Score only renders for live/finished matches — upcoming always shows VS + kickoff.
+    const penaltyHtml = m.penaltyA != null ? `<div class="penalty-score">pens ${m.penaltyA}–${m.penaltyB}</div>` : '';
     const center = m.status === 'upcoming'
       ? `<div class="vs">VS</div><div class="kick">${fmtTime(m.kickoff)}</div>`
-      : `<div class="score"><span>${m.scoreA ?? 0}</span><span class="score-sep">–</span><span>${m.scoreB ?? 0}</span></div>`;
+      : `<div class="score"><span>${m.scoreA ?? 0}</span><span class="score-sep">–</span><span>${m.scoreB ?? 0}</span></div>${penaltyHtml}`;
 
     // Goalscorers row
     let scorersHtml = '';
@@ -204,7 +205,10 @@
             ? '<ion-icon name="pencil"></ion-icon> Edit pick'
             : '<ion-icon name="football"></ion-icon> Predict'}</button>`
         : `<button class="btn small ghost" disabled><ion-icon name="lock-closed"></ion-icon> Locked</button>`;
-      actions = `<div class="match-actions"><span class="mypred">${predTxt}</span>${btn}</div>`;
+      const breakdownBtn = m.status === 'finished'
+        ? `<button class="btn small ghost" data-breakdown="${m.id}"><ion-icon name="people"></ion-icon> Predictions</button>`
+        : '';
+      actions = `<div class="match-actions"><span class="mypred">${predTxt}</span>${btn}${breakdownBtn}</div>`;
     }
     return `
       <div class="match-card" data-match="${m.id}">
@@ -228,6 +232,38 @@
     container.querySelectorAll('[data-predict]').forEach(btn => {
       btn.onclick = () => openPredictionModal(matches.find(m => m.id === Number(btn.dataset.predict)));
     });
+    container.querySelectorAll('[data-breakdown]').forEach(btn => {
+      btn.onclick = () => openBreakdownModal(matches.find(m => m.id === Number(btn.dataset.breakdown)));
+    });
+  }
+
+  async function openBreakdownModal(m) {
+    const modal = $('#modal');
+    const inner = $('#modal-inner');
+    inner.innerHTML = `<div class="modal-header"><h2>${esc(m.teamAName)} vs ${esc(m.teamBName)}</h2><p class="modal-note">Final score: ${m.scoreA}–${m.scoreB}</p></div><p>Loading…</p>`;
+    modal.classList.remove('hidden');
+    try {
+      const { rows } = await api(`/matches/${m.id}/breakdown`);
+      if (!rows.length) { inner.querySelector('p:last-child').textContent = 'No predictions made.'; return; }
+      const actualOutcome = m.scoreA > m.scoreB ? 'A' : m.scoreA < m.scoreB ? 'B' :
+        (m.penaltyA != null ? (m.penaltyA > m.penaltyB ? 'A' : 'B') : 'D');
+      const rows_html = rows.map(r => {
+        const correct = r.winner === actualOutcome ? '✓' : '✗';
+        const pts = r.points != null ? `<span class="pred-points">+${r.points}</span>` : '—';
+        const avatar = r.profile_picture
+          ? `<img src="${esc(r.profile_picture)}" class="av-sm">`
+          : `<span class="av-sm av-fallback">${esc(r.name[0])}</span>`;
+        return `<tr><td>${avatar} ${esc(r.name)}</td><td>${r.score_a}–${r.score_b}</td><td class="${r.winner === actualOutcome ? 'correct' : 'wrong'}">${correct}</td><td>${pts}</td></tr>`;
+      }).join('');
+      inner.innerHTML = `
+        <div class="modal-header"><h2>${esc(m.teamAName)} vs ${esc(m.teamBName)}</h2><p class="modal-note">Final score: ${m.scoreA}–${m.scoreB} · ${rows.length} predictions</p></div>
+        <table class="breakdown-table">
+          <thead><tr><th>Player</th><th>Pick</th><th>Result</th><th>Pts</th></tr></thead>
+          <tbody>${rows_html}</tbody>
+        </table>
+        <button class="btn ghost" id="breakdownClose" style="margin-top:1rem">Close</button>`;
+      $('#breakdownClose').onclick = () => modal.classList.add('hidden');
+    } catch (e) { inner.querySelector('p:last-child').textContent = 'Failed to load.'; }
   }
 
   // ---------- Prediction modal ----------
@@ -242,7 +278,7 @@
       </div>
       <div class="winner-opts">
         <button class="winner-opt" data-w="A"><span class="flag">${flagHtml(m.teamAFlag)}</span>${esc(m.teamAName)}</button>
-        <button class="winner-opt" data-w="D"><span class="flag"><ion-icon name="remove" class="draw-mark"></ion-icon></span>Draw</button>
+        ${m.stage === 'Group Stage' ? `<button class="winner-opt" data-w="D"><span class="flag"><ion-icon name="remove" class="draw-mark"></ion-icon></span>Draw</button>` : ''}
         <button class="winner-opt" data-w="B"><span class="flag">${flagHtml(m.teamBFlag)}</span>${esc(m.teamBName)}</button>
       </div>
       <div class="score-inputs">
@@ -251,7 +287,7 @@
         <input id="predB" type="number" min="0" max="20" inputmode="numeric" value="${p ? p.scoreB : ''}" placeholder="0">
       </div>
       <p class="modal-note">
-        Right result: <b>3 pts</b> · Nail the exact score: <b>8 pts</b>
+        ${m.stage === 'Group Stage' ? 'Right result: <b>3 pts</b> · Nail the exact score: <b>8 pts</b>' : 'Knockout: pick the winner (even for tied score — penalties decide). Right winner: <b>3 pts</b> · Exact score: <b>8 pts</b>'}
       </p>
       <div class="modal-actions">
         <button class="btn ghost" id="predCancel">Cancel</button>
@@ -272,11 +308,12 @@
       if (a.value === '' || b.value === '') return;
       if (winner === 'A' && av <= bv) a.value = bv + 1;
       if (winner === 'B' && bv <= av) b.value = av + 1;
-      if (winner === 'D') b.value = a.value;
+      if (winner === 'D' && m.stage === 'Group Stage') b.value = a.value;
     }
     function syncWinnerFromScore() {
       const av = Number($('#predA').value), bv = Number($('#predB').value);
       if ($('#predA').value === '' || $('#predB').value === '') return;
+      if (av === bv && m.stage !== 'Group Stage') return; // knockout tied: keep current winner
       winner = av > bv ? 'A' : av < bv ? 'B' : 'D';
       paint();
     }
@@ -291,7 +328,9 @@
         await api('/predictions', { method: 'POST', body: { matchId: m.id, winner, scoreA: Number(a), scoreB: Number(b) } });
         closeModal();
         toast('Prediction saved');
-        route();
+        const scrollY = window.scrollY;
+        await route();
+        window.scrollTo({ top: scrollY, behavior: 'instant' });
       } catch (e) { toast(e.message, true); }
     };
   }
@@ -506,7 +545,7 @@
           <img src="${esc(me.profilePicture || avatarFallback(me.name))}" alt="">
           <div><div class="pname">${esc(me.name)}</div><div class="pmail">${esc(me.email)}</div></div>
         </div>
-        <div class="news-item"><span class="news-tag">Team</span> ${team ? `${flagHtml(team.flag)} ${esc(team.name)}` : '—'}</div>
+        <div class="news-item"><span class="news-tag">Team</span> ${team ? `<span class="st-flag">${flagHtml(team.flag)}</span> ${esc(team.name)}` : '—'}</div>
         <div class="news-item"><span class="news-tag">Location</span> ${esc(me.location || 'Not set')}</div>
         <div class="news-item"><span class="news-tag">Points</span> <b class="lb-pts">${me.totalPoints}</b></div>
       </div>

@@ -30,12 +30,12 @@ const applyFixtures = db.transaction((fixtures) => {
   const changed = [];
   const find   = db.prepare('SELECT * FROM matches WHERE ext_id = ?');
   const insert = db.prepare(`
-    INSERT INTO matches (ext_id, team_a_id, team_b_id, kickoff, stage, group_name, status, score_a, score_b)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO matches (ext_id, team_a_id, team_b_id, kickoff, stage, group_name, status, score_a, score_b, penalty_a, penalty_b)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const update = db.prepare(`
     UPDATE matches SET kickoff = ?, stage = ?, group_name = ?, status = ?, score_a = ?, score_b = ?,
-      updated_at = datetime('now') WHERE id = ?
+      penalty_a = ?, penalty_b = ?, updated_at = datetime('now') WHERE id = ?
   `);
   for (const f of fixtures) {
     const aId = teamIdByName(f.teamAName);
@@ -46,14 +46,16 @@ const applyFixtures = db.transaction((fixtures) => {
 
     const existing = find.get(f.extId);
     if (!existing) {
-      const info = insert.run(f.extId, aId, bId, f.kickoff, f.stage, f.groupName, f.status, f.scoreA, f.scoreB);
+      const info = insert.run(f.extId, aId, bId, f.kickoff, f.stage, f.groupName, f.status, f.scoreA, f.scoreB, f.penaltyA ?? null, f.penaltyB ?? null);
       if (f.status === 'finished') changed.push(info.lastInsertRowid);
     } else {
       const resultChanged =
         existing.status !== f.status ||
         existing.score_a !== f.scoreA ||
-        existing.score_b !== f.scoreB;
-      update.run(f.kickoff, f.stage, f.groupName, f.status, f.scoreA, f.scoreB, existing.id);
+        existing.score_b !== f.scoreB ||
+        existing.penalty_a !== (f.penaltyA ?? null) ||
+        existing.penalty_b !== (f.penaltyB ?? null);
+      update.run(f.kickoff, f.stage, f.groupName, f.status, f.scoreA, f.scoreB, f.penaltyA ?? null, f.penaltyB ?? null, existing.id);
       if (resultChanged) changed.push(existing.id);
     }
   }

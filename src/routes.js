@@ -63,6 +63,7 @@ router.get('/teams/:id/supporters', (req, res) => {
 const MATCH_SELECT = `
   SELECT m.id, m.ext_id, m.kickoff, m.stage, m.group_name AS groupName, m.status,
          m.score_a AS scoreA, m.score_b AS scoreB,
+         m.penalty_a AS penaltyA, m.penalty_b AS penaltyB,
          m.prediction_override AS predictionOverride,
          m.goals_json AS goalsJson,
          ta.id AS teamAId, ta.name AS teamAName, ta.flag AS teamAFlag, ta.code AS teamACode,
@@ -112,8 +113,11 @@ router.post('/predictions', (req, res) => {
   if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a > 20 || b > 20) {
     return res.status(400).json({ error: 'Scores must be whole numbers between 0 and 20.' });
   }
+  const isKnockout = match.stage && match.stage !== 'Group Stage';
   const impliedWinner = a > b ? 'A' : a < b ? 'B' : 'D';
-  if (impliedWinner !== winner) {
+  if (a === b && isKnockout) {
+    if (winner === 'D') return res.status(400).json({ error: 'Knockout matches cannot end in a draw — pick a winner.' });
+  } else if (impliedWinner !== winner) {
     return res.status(400).json({ error: 'Predicted score does not match the predicted winner.' });
   }
 
@@ -308,6 +312,19 @@ router.post('/admin/recalculate', (req, res) => {
 router.post('/admin/reset-leaderboard', (req, res) => {
   resetLeaderboard();
   res.json({ ok: true });
+});
+
+router.get('/matches/:id/breakdown', (req, res) => {
+  const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
+  if (!match || match.status !== 'finished') return res.json({ rows: [] });
+  const rows = db.prepare(`
+    SELECT e.name, e.profile_picture, p.score_a, p.score_b, p.winner, p.points
+    FROM predictions p
+    JOIN employees e ON e.id = p.employee_id
+    WHERE p.match_id = ?
+    ORDER BY p.points DESC, e.name
+  `).all(req.params.id);
+  res.json({ rows });
 });
 
 module.exports = router;

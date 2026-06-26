@@ -90,6 +90,8 @@ CREATE INDEX IF NOT EXISTS idx_standings_group ON standings(group_name);
 [
   'ALTER TABLE matches ADD COLUMN prediction_override INTEGER DEFAULT 0',
   'ALTER TABLE matches ADD COLUMN goals_json TEXT',
+  'ALTER TABLE matches ADD COLUMN penalty_a INTEGER',
+  'ALTER TABLE matches ADD COLUMN penalty_b INTEGER',
 ].forEach(sql => { try { db.exec(sql); } catch {} });
 
 module.exports = db;

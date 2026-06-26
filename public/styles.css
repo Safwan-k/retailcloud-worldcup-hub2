@@ -502,3 +502,16 @@ table.admin th { color: var(--muted-foreground); font-size: .64rem; font-weight:
 .profile-head img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
 .profile-head .pname { font-weight: 800; font-size: 1.1rem; color: var(--primary); letter-spacing: -.01em; }
 .profile-head .pmail { font-size: .8rem; color: var(--muted-foreground); }
+
+/* ---------- Breakdown table ---------- */
+table.breakdown-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+table.breakdown-table th, table.breakdown-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+table.breakdown-table th { color: var(--muted-foreground); font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+table.breakdown-table td:nth-child(1) { display: flex; align-items: center; gap: 8px; }
+table.breakdown-table .correct { color: var(--success); font-weight: 700; }
+table.breakdown-table .wrong { color: var(--destructive); }
+.av-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.av-fallback { display: inline-flex; align-items: center; justify-content: center; background: var(--muted); color: var(--muted-foreground); font-weight: 700; font-size: .75rem; }
+
+/* ---------- Penalty score ---------- */
+.penalty-score { font-size: .7rem; color: var(--muted-foreground); margin-top: 2px; text-align: center; }
