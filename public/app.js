@@ -275,25 +275,29 @@
   // ---------- Prediction modal ----------
   function openPredictionModal(m) {
     const p = m.myPrediction;
+    const isKnockout = m.stage !== 'Group Stage';
     $('#modalCard').innerHTML = `<div class="modal-body" style="padding-top:20px">
       <h3>Your prediction</h3>
-      <div class="match-row" style="margin-bottom:16px">
-        <div class="team"><span class="flag">${flagHtml(m.teamAFlag)}</span><span class="tname">${esc(m.teamAName)}</span></div>
-        <div class="match-center"><div class="vs">VS</div><div class="kick">${fmtDate(m.kickoff)} · ${fmtTime(m.kickoff)}</div></div>
-        <div class="team"><span class="flag">${flagHtml(m.teamBFlag)}</span><span class="tname">${esc(m.teamBName)}</span></div>
-      </div>
-      <div class="winner-opts">
-        <button class="winner-opt" data-w="A"><span class="flag">${flagHtml(m.teamAFlag)}</span>${esc(m.teamAName)}</button>
-        ${m.stage === 'Group Stage' ? `<button class="winner-opt" data-w="D"><span class="flag"><ion-icon name="remove" class="draw-mark"></ion-icon></span>Draw</button>` : ''}
-        <button class="winner-opt" data-w="B"><span class="flag">${flagHtml(m.teamBFlag)}</span>${esc(m.teamBName)}</button>
+      <p class="pred-date-line">${fmtDate(m.kickoff)} · ${fmtTime(m.kickoff)}</p>
+      <div class="pred-teams">
+        <button class="pred-team-btn" id="pickA">
+          <span class="pred-flag">${flagHtml(m.teamAFlag)}</span>
+          <span class="pred-team-name">${esc(m.teamAName)}</span>
+        </button>
+        <span class="pred-vs">VS</span>
+        <button class="pred-team-btn" id="pickB">
+          <span class="pred-flag">${flagHtml(m.teamBFlag)}</span>
+          <span class="pred-team-name">${esc(m.teamBName)}</span>
+        </button>
       </div>
       <div class="score-inputs">
         <input id="predA" type="number" min="0" max="20" inputmode="numeric" value="${p ? p.scoreA : ''}" placeholder="0">
         <span class="dash">–</span>
         <input id="predB" type="number" min="0" max="20" inputmode="numeric" value="${p ? p.scoreB : ''}" placeholder="0">
       </div>
+      ${isKnockout ? '' : '<p class="pred-draw-hint" id="drawHint"></p>'}
       <p class="modal-note">
-        ${m.stage === 'Group Stage' ? 'Right result: <b>3 pts</b> · Nail the exact score: <b>8 pts</b>' : 'Knockout: pick the winner (even for tied score — penalties decide). Right winner: <b>3 pts</b> · Exact score: <b>8 pts</b>'}
+        ${isKnockout ? 'Knockout: pick the winner. Right winner: <b>3 pts</b> · Exact score: <b>8 pts</b>' : 'Right result: <b>3 pts</b> · Exact score: <b>8 pts</b>'}
       </p>
       <div class="modal-actions">
         <button class="btn ghost" id="predCancel">Cancel</button>
@@ -303,36 +307,55 @@
     $('#modal').classList.remove('hidden');
 
     let winner = p?.winner || null;
-    const opts = $('#modalCard').querySelectorAll('.winner-opt');
-    const paint = () => opts.forEach(o => o.classList.toggle('selected', o.dataset.w === winner));
-    paint();
-    opts.forEach(o => o.onclick = () => { winner = o.dataset.w; syncScoreFromWinner(); paint(); });
 
-    // Keep winner and score consistent both directions.
-    function syncScoreFromWinner() {
-      const a = $('#predA'), b = $('#predB');
-      const av = Number(a.value), bv = Number(b.value);
-      if (a.value === '' || b.value === '') return;
-      if (winner === 'A' && av <= bv) a.value = bv + 1;
-      if (winner === 'B' && bv <= av) b.value = av + 1;
-      if (winner === 'D' && m.stage === 'Group Stage') b.value = a.value;
+    function paint() {
+      const av = Number($('#predA').value), bv = Number($('#predB').value);
+      const aFilled = $('#predA').value !== '', bFilled = $('#predB').value !== '';
+      const isDraw = aFilled && bFilled && av === bv;
+      $('#pickA').classList.toggle('pred-team-selected', winner === 'A');
+      $('#pickB').classList.toggle('pred-team-selected', winner === 'B');
+      if (!isKnockout) {
+        $('#pickA').classList.toggle('pred-team-draw', isDraw);
+        $('#pickB').classList.toggle('pred-team-draw', isDraw);
+        const hint = $('#drawHint');
+        if (hint) hint.textContent = isDraw ? '🤝 Draw' : '';
+      }
     }
+
+    $('#pickA').onclick = () => {
+      const b = $('#predB'), a = $('#predA');
+      const bv = b.value === '' ? 0 : Number(b.value);
+      a.value = bv + 1;
+      if (b.value === '') b.value = 0;
+      winner = 'A'; paint();
+    };
+    $('#pickB').onclick = () => {
+      const a = $('#predA'), b = $('#predB');
+      const av = a.value === '' ? 0 : Number(a.value);
+      b.value = av + 1;
+      if (a.value === '') a.value = 0;
+      winner = 'B'; paint();
+    };
+
     function syncWinnerFromScore() {
       const av = Number($('#predA').value), bv = Number($('#predB').value);
       if ($('#predA').value === '' || $('#predB').value === '') return;
-      if (av === bv && m.stage !== 'Group Stage') return; // knockout tied: keep current winner
+      if (av === bv && isKnockout) { paint(); return; }
       winner = av > bv ? 'A' : av < bv ? 'B' : 'D';
       paint();
     }
     $('#predA').oninput = syncWinnerFromScore;
     $('#predB').oninput = syncWinnerFromScore;
+    paint();
 
     $('#predCancel').onclick = closeModal;
     $('#predSave').onclick = async () => {
       const a = $('#predA').value, b = $('#predB').value;
-      if (!winner || a === '' || b === '') { toast('Pick a winner and enter a score.', true); return; }
+      if (a === '' || b === '') { toast('Enter a score for both teams.', true); return; }
+      if (isKnockout && Number(a) === Number(b)) { toast('Knockout match — pick a winning team by tapping their flag.', true); return; }
+      const effectiveWinner = winner || (Number(a) > Number(b) ? 'A' : Number(b) > Number(a) ? 'B' : 'D');
       try {
-        await api('/predictions', { method: 'POST', body: { matchId: m.id, winner, scoreA: Number(a), scoreB: Number(b) } });
+        await api('/predictions', { method: 'POST', body: { matchId: m.id, winner: effectiveWinner, scoreA: Number(a), scoreB: Number(b) } });
         closeModal();
         toast('Prediction saved');
         const scrollY = window.scrollY;
@@ -438,35 +461,37 @@
     const avatar = me.profilePicture
       ? `<img src="${esc(me.profilePicture)}" class="rm-tile-avatar">`
       : `<span class="rm-tile-avatar rm-tile-fallback">${esc(me.name[0])}</span>`;
+    const ghostTile = `<span class="rm-ot-ghost-avatar"></span><span class="rm-ot-ghost-name"></span>`;
     content.innerHTML = up ? `
       <h2 class="rm-title">You moved up! 🎉</h2>
-      <div class="rm-journey">
-        <div class="rm-journey-tile rm-tile-old">
-          <span class="rm-tile-pos">#${prev}</span>
-          ${avatar}
-          <span class="rm-tile-name">${esc(me.name)}</span>
+      <div class="rm-overtake-wrap">
+        <div class="rm-ot-tile rm-ot-other rm-ot-other-down">
+          <span class="rm-tile-pos">#${currentRank}</span>
+          ${ghostTile}
         </div>
-        <div class="rm-journey-lines"><span></span><span></span><span></span></div>
-        <div class="rm-journey-tile rm-tile-new">
+        <div class="rm-ot-tile rm-ot-user rm-ot-user-up">
           <span class="rm-tile-pos rm-tile-pos-new">#${currentRank}</span>
           ${avatar}
           <span class="rm-tile-name">${esc(me.name)}</span>
         </div>
       </div>
-      <p class="rm-sub">Climbed <b>${diff}</b> spot${diff > 1 ? 's' : ''} up the leaderboard</p>` : `
-      <div class="rm-icon">📉</div>
+      <p class="rm-sub">Climbed <b>${diff}</b> spot${diff > 1 ? 's' : ''} · now #${currentRank}</p>` : `
       <h2 class="rm-title">You dropped</h2>
-      <div class="rm-journey rm-journey-down">
-        <div class="rm-journey-tile rm-tile-new rm-tile-down">
+      <div class="rm-overtake-wrap">
+        <div class="rm-ot-tile rm-ot-user rm-ot-user-dn">
           <span class="rm-tile-pos rm-tile-pos-down">#${currentRank}</span>
           ${avatar}
           <span class="rm-tile-name">${esc(me.name)}</span>
+        </div>
+        <div class="rm-ot-tile rm-ot-other rm-ot-other-up">
+          <span class="rm-tile-pos">#${prev}</span>
+          ${ghostTile}
         </div>
       </div>
       <p class="rm-sub">Fell <b>${diff}</b> spot${diff > 1 ? 's' : ''} · was #${prev}</p>`;
     const modal = $('#rankModal');
     modal.classList.remove('hidden');
-    if (up) launchLottie(); else clearLottie();
+    launchLottie(up ? '/assets/level up.json' : '/assets/down.json');
     $('#rankModalClose').onclick = () => {
       modal.classList.add('hidden');
       clearLottie();
@@ -474,7 +499,7 @@
   }
 
   let lottieInst = null;
-  function launchLottie() {
+  function launchLottie(path) {
     clearLottie();
     const container = $('#rankLottie');
     container.style.display = 'block';
@@ -484,7 +509,7 @@
       renderer: 'svg',
       loop: true,
       autoplay: true,
-      path: '/assets/level up.json',
+      path: path || '/assets/level up.json',
     });
   }
   function clearLottie() {
