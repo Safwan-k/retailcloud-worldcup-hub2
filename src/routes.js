@@ -238,7 +238,12 @@ router.get('/feed', (req, res) => {
     })),
   ];
 
-  res.json({ today, live, finished, top5, journey, news });
+  const myRankRow = db.prepare(
+    `SELECT COUNT(*) + 1 AS rank FROM employees WHERE total_points > (SELECT total_points FROM employees WHERE id = ?)`
+  ).get(req.employee.id);
+  const myRank = myRankRow?.rank ?? null;
+
+  res.json({ today, live, finished, top5, journey, news, myRank });
 });
 
 // ---------- Admin ----------

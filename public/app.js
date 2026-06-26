@@ -413,6 +413,74 @@
 
     bindPredictButtons(el, feed.today.map(withMyPred));
     schedulePoll();
+    checkRankChange(feed.myRank);
+  }
+
+  // ---------- Rank change modal ----------
+  let rankModalShownThisSession = false;
+  function checkRankChange(currentRank) {
+    if (rankModalShownThisSession || currentRank == null) return;
+    rankModalShownThisSession = true;
+    const key = `rank_${me.id}`;
+    const prev = Number(localStorage.getItem(key));
+    localStorage.setItem(key, currentRank);
+    if (!prev || prev === currentRank) return;
+    const up = currentRank < prev;
+    const diff = Math.abs(prev - currentRank);
+    const content = $('#rankModalContent');
+    content.innerHTML = up ? `
+      <div class="rm-icon">🏆</div>
+      <h2 class="rm-title">You moved up!</h2>
+      <p class="rm-sub">You climbed <b>${diff}</b> spot${diff > 1 ? 's' : ''} to <span class="rm-rank">#${currentRank}</span></p>
+      <p class="rm-prev">Previously #${prev}</p>` : `
+      <div class="rm-icon">📉</div>
+      <h2 class="rm-title">You dropped</h2>
+      <p class="rm-sub">You fell <b>${diff}</b> spot${diff > 1 ? 's' : ''} to <span class="rm-rank rm-down">#${currentRank}</span></p>
+      <p class="rm-prev">Previously #${prev}</p>`;
+    const modal = $('#rankModal');
+    modal.classList.remove('hidden');
+    if (up) launchConfetti();
+    $('#rankModalClose').onclick = () => {
+      modal.classList.add('hidden');
+      stopConfetti();
+    };
+  }
+
+  let confettiAnim = null;
+  function launchConfetti() {
+    const canvas = $('#rankConfetti');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width = canvas.offsetWidth;
+    const H = canvas.height = canvas.offsetHeight;
+    const COLORS = ['#f26010','#fbbf24','#34d399','#60a5fa','#f472b6','#a78bfa'];
+    const pieces = Array.from({ length: 120 }, () => ({
+      x: Math.random() * W, y: Math.random() * H - H,
+      r: 5 + Math.random() * 6, vy: 2 + Math.random() * 3,
+      vx: (Math.random() - .5) * 2, spin: (Math.random() - .5) * .2,
+      angle: Math.random() * Math.PI * 2,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      shape: Math.random() > .5 ? 'rect' : 'circle',
+    }));
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      pieces.forEach(p => {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+        ctx.fillStyle = p.color; ctx.globalAlpha = .9;
+        if (p.shape === 'rect') ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        else { ctx.beginPath(); ctx.arc(0, 0, p.r / 2, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+        p.x += p.vx; p.y += p.vy; p.angle += p.spin;
+        if (p.y > H + 10) { p.y = -10; p.x = Math.random() * W; }
+      });
+      confettiAnim = requestAnimationFrame(draw);
+    }
+    draw();
+    setTimeout(stopConfetti, 5000);
+  }
+  function stopConfetti() {
+    if (confettiAnim) { cancelAnimationFrame(confettiAnim); confettiAnim = null; }
+    const ctx = $('#rankConfetti')?.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, 9999, 9999);
   }
 
   // ---------- Matches ----------
