@@ -81,7 +81,7 @@ router.get('/matches', (req, res) => {
   res.json({
     matches: matches.map(m => ({
       ...m,
-      locked: !m.predictionOverride && (m.status !== 'upcoming' || new Date(m.kickoff) <= new Date()),
+      locked: !m.predictionOverride && (m.status === 'finished' || m.status === 'live' || (m.status === 'upcoming' && new Date(m.kickoff) - new Date() <= 5 * 60 * 1000)),
       myPrediction: predByMatch[m.id]
         ? { winner: predByMatch[m.id].winner, scoreA: predByMatch[m.id].score_a, scoreB: predByMatch[m.id].score_b, points: predByMatch[m.id].points }
         : null,
@@ -95,17 +95,17 @@ router.post('/predictions', (req, res) => {
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
   if (!match) return res.status(404).json({ error: 'Match not found.' });
 
-  // Server-side lock. Lock 5 min before kickoff; live until ~halftime (45 min after kickoff).
+  // Server-side lock. Lock 5 min before kickoff; locked for live and finished.
   refreshStatuses();
   const fresh = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
   const kickoff = new Date(fresh.kickoff).getTime();
   const locked = !fresh.prediction_override && (
     fresh.status === 'finished' ||
-    (fresh.status === 'live' && Date.now() - kickoff > 45 * 60 * 1000) ||
+    fresh.status === 'live' ||
     (fresh.status === 'upcoming' && kickoff - Date.now() <= 5 * 60 * 1000)
   );
   if (locked) {
-    return res.status(403).json({ error: 'Predictions locked — closes 5 min before kickoff (live until halftime).' });
+    return res.status(403).json({ error: 'Predictions locked — closes 5 min before kickoff.' });
   }
 
   const a = Number(scoreA), b = Number(scoreB);

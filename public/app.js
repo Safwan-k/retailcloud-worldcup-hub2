@@ -30,13 +30,12 @@
     t._h = setTimeout(() => t.classList.add('hidden'), 2600);
   }
 
-  // Lock 5 min before kickoff; live matches stay open until ~halftime (45 min after kickoff)
+  // Lock 5 min before kickoff, for all live and finished matches
   // predictionOverride = admin can force-unlock any match
   function isMatchLocked(m) {
     if (m.predictionOverride) return false;
-    if (m.status === 'finished') return true;
+    if (m.status === 'finished' || m.status === 'live') return true;
     const kickoff = new Date(m.kickoff).getTime();
-    if (m.status === 'live') return Date.now() - kickoff > 45 * 60 * 1000;
     return kickoff - Date.now() <= 5 * 60 * 1000;
   }
 
@@ -239,7 +238,7 @@
 
   async function openBreakdownModal(m) {
     const modal = $('#modal');
-    const inner = $('#modal-inner');
+    const inner = $('#modalCard');
     inner.innerHTML = `<div class="modal-header"><h2>${esc(m.teamAName)} vs ${esc(m.teamBName)}</h2><p class="modal-note">Final score: ${m.scoreA}–${m.scoreB}</p></div><p>Loading…</p>`;
     modal.classList.remove('hidden');
     try {
