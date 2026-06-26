@@ -505,8 +505,13 @@
         return;
       }
 
-      const needsPred = matches.filter(m => m.status === 'upcoming' && !m.locked && !m.myPrediction);
-      const upcoming  = matches.filter(m => m.status === 'upcoming' && (m.locked || m.myPrediction));
+      // "Predict now" = only the soonest date that has unpredicted unlocked matches
+      const allNeedsPred = matches.filter(m => m.status === 'upcoming' && !m.locked && !m.myPrediction);
+      const nextPredDate = allNeedsPred.length ? fmtDate(allNeedsPred[0].kickoff) : null;
+      const needsPred = allNeedsPred.filter(m => fmtDate(m.kickoff) === nextPredDate);
+      const needsPredOther = allNeedsPred.filter(m => fmtDate(m.kickoff) !== nextPredDate);
+      const upcoming  = [...matches.filter(m => m.status === 'upcoming' && (m.locked || m.myPrediction)), ...needsPredOther];
+      upcoming.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
       const finished  = matches.filter(m => m.status === 'finished');
 
       function byDateGroup(ms, reverse = false) {
