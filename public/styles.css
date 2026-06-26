@@ -502,8 +502,8 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
   animation: rmSlideUp .35s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes rmSlideUp { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-.rank-confetti-canvas {
-  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+.rank-lottie-wrap {
+  width: 180px; height: 180px; margin: -10px auto 0; display: none;
 }
 #rankModalContent { position: relative; z-index: 1; }
 .rm-icon { font-size: 3.5rem; line-height: 1; margin-bottom: 10px; animation: rmBounce .6s cubic-bezier(.34,1.56,.64,1) .2s both; }

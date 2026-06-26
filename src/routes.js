@@ -18,7 +18,12 @@ router.post('/auth/logout', logout);
 router.use(requireAuth);
 
 // ---------- Profile ----------
-router.get('/me', (req, res) => res.json({ employee: publicEmployee(req.employee) }));
+router.get('/me', (req, res) => {
+  const rankRow = db.prepare(
+    `SELECT COUNT(*) + 1 AS rank FROM employees WHERE total_points > (SELECT total_points FROM employees WHERE id = ?)`
+  ).get(req.employee.id);
+  res.json({ employee: { ...publicEmployee(req.employee), myRank: rankRow?.rank ?? null } });
+});
 
 router.patch('/me', (req, res) => {
   const { favoriteTeamId, department, location } = req.body || {};

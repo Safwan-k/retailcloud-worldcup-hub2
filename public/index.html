@@ -11,6 +11,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@7/dist/ionicons/ionicons.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 </head>
 <body>
   <div id="app">
@@ -127,7 +128,7 @@
     <!-- Rank change modal -->
     <div id="rankModal" class="rank-modal hidden">
       <div class="rank-modal-card">
-        <canvas id="rankConfetti" class="rank-confetti-canvas"></canvas>
+        <div id="rankLottie" class="rank-lottie-wrap"></div>
         <div id="rankModalContent"></div>
         <button class="btn orange rank-modal-btn" id="rankModalClose">Let's go!</button>
       </div>
