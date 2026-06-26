@@ -506,14 +506,84 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
   width: 180px; height: 180px; margin: -10px auto 0; display: none;
 }
 #rankModalContent { position: relative; z-index: 1; }
-.rm-icon { font-size: 3.5rem; line-height: 1; margin-bottom: 10px; animation: rmBounce .6s cubic-bezier(.34,1.56,.64,1) .2s both; }
+.rm-icon { font-size: 3rem; line-height: 1; margin-bottom: 8px; animation: rmBounce .6s cubic-bezier(.34,1.56,.64,1) .2s both; }
 @keyframes rmBounce { from { transform: scale(0) } to { transform: scale(1) } }
-.rm-title { font-size: 1.4rem; font-weight: 900; color: var(--primary); margin: 0 0 8px; }
-.rm-sub { font-size: 1rem; color: var(--foreground); margin: 0 0 4px; }
-.rm-rank { font-size: 1.3rem; font-weight: 900; color: var(--accent); }
+.rm-title { font-size: 1.3rem; font-weight: 900; color: var(--primary); margin: 0 0 14px; }
+.rm-sub { font-size: .85rem; color: var(--muted-foreground); margin: 12px 0 0; }
+.rm-rank { font-size: 1.1rem; font-weight: 900; color: var(--accent); }
 .rm-rank.rm-down { color: #ef4444; }
-.rm-prev { font-size: .75rem; color: var(--muted-foreground); margin: 4px 0 0; }
-.rank-modal-btn { margin-top: 22px; position: relative; z-index: 1; width: 100%; }
+.rank-modal-btn { margin-top: 20px; position: relative; z-index: 1; width: 100%; }
+
+/* rank journey animation */
+.rm-journey {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  position: relative;
+}
+.rm-journey-tile {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 16px; width: 100%;
+  box-shadow: var(--shadow-sm);
+}
+.rm-tile-old {
+  opacity: .45; transform: translateY(0);
+  animation: tileSlideOut .5s ease .1s both;
+}
+@keyframes tileSlideOut {
+  0%  { opacity: .45; transform: translateY(0); }
+  100%{ opacity: .2;  transform: translateY(6px); }
+}
+.rm-tile-new {
+  border-color: var(--accent); box-shadow: 0 0 0 2px rgba(242,96,12,.2);
+  animation: tileSlideUp .55s cubic-bezier(.34,1.4,.64,1) .35s both;
+}
+@keyframes tileSlideUp {
+  0%  { opacity: 0; transform: translateY(36px) scale(.95); }
+  100%{ opacity: 1; transform: translateY(0)   scale(1); }
+}
+.rm-tile-pos {
+  font-size: 1rem; font-weight: 900; color: var(--muted-foreground);
+  min-width: 32px; text-align: center;
+}
+.rm-tile-pos-new {
+  color: var(--accent); font-size: 1.15rem;
+  animation: numPop .4s cubic-bezier(.34,1.56,.64,1) .7s both;
+}
+@keyframes numPop {
+  0%  { transform: scale(.5); }
+  60% { transform: scale(1.25); }
+  100%{ transform: scale(1); }
+}
+.rm-tile-pos-down { color: #ef4444; }
+.rm-tile-avatar {
+  width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+  background: var(--muted); flex-shrink: 0;
+}
+.rm-tile-fallback {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: .9rem;
+}
+.rm-tile-name { font-size: .82rem; font-weight: 700; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm-journey-lines {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0;
+}
+.rm-journey-lines span {
+  display: block; width: 2px; height: 8px; border-radius: 2px;
+  background: var(--accent); opacity: 0;
+  animation: lineAppear .2s ease forwards;
+}
+.rm-journey-lines span:nth-child(1) { animation-delay: .15s; }
+.rm-journey-lines span:nth-child(2) { animation-delay: .22s; }
+.rm-journey-lines span:nth-child(3) { animation-delay: .29s; }
+@keyframes lineAppear { to { opacity: .6; } }
+.rm-journey-down .rm-tile-down {
+  border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.15);
+  animation: tileDropIn .5s cubic-bezier(.34,1.2,.64,1) .2s both;
+}
+@keyframes tileDropIn {
+  0%  { opacity: 0; transform: translateY(-30px) scale(.95); }
+  100%{ opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .modal-header h2 { margin: 0 28px 4px 0; font-size: 1.05rem; font-weight: 800; color: var(--primary); }
 .modal-header .modal-note { margin: 0; }

@@ -435,14 +435,35 @@
     const up = currentRank < prev;
     const diff = Math.abs(prev - currentRank);
     const content = $('#rankModalContent');
+    const avatar = me.profilePicture
+      ? `<img src="${esc(me.profilePicture)}" class="rm-tile-avatar">`
+      : `<span class="rm-tile-avatar rm-tile-fallback">${esc(me.name[0])}</span>`;
     content.innerHTML = up ? `
-      <h2 class="rm-title">You moved up!</h2>
-      <p class="rm-sub">You climbed <b>${diff}</b> spot${diff > 1 ? 's' : ''} to <span class="rm-rank">#${currentRank}</span></p>
-      <p class="rm-prev">Previously #${prev}</p>` : `
+      <h2 class="rm-title">You moved up! 🎉</h2>
+      <div class="rm-journey">
+        <div class="rm-journey-tile rm-tile-old">
+          <span class="rm-tile-pos">#${prev}</span>
+          ${avatar}
+          <span class="rm-tile-name">${esc(me.name)}</span>
+        </div>
+        <div class="rm-journey-lines"><span></span><span></span><span></span></div>
+        <div class="rm-journey-tile rm-tile-new">
+          <span class="rm-tile-pos rm-tile-pos-new">#${currentRank}</span>
+          ${avatar}
+          <span class="rm-tile-name">${esc(me.name)}</span>
+        </div>
+      </div>
+      <p class="rm-sub">Climbed <b>${diff}</b> spot${diff > 1 ? 's' : ''} up the leaderboard</p>` : `
       <div class="rm-icon">📉</div>
       <h2 class="rm-title">You dropped</h2>
-      <p class="rm-sub">You fell <b>${diff}</b> spot${diff > 1 ? 's' : ''} to <span class="rm-rank rm-down">#${currentRank}</span></p>
-      <p class="rm-prev">Previously #${prev}</p>`;
+      <div class="rm-journey rm-journey-down">
+        <div class="rm-journey-tile rm-tile-new rm-tile-down">
+          <span class="rm-tile-pos rm-tile-pos-down">#${currentRank}</span>
+          ${avatar}
+          <span class="rm-tile-name">${esc(me.name)}</span>
+        </div>
+      </div>
+      <p class="rm-sub">Fell <b>${diff}</b> spot${diff > 1 ? 's' : ''} · was #${prev}</p>`;
     const modal = $('#rankModal');
     modal.classList.remove('hidden');
     if (up) launchLottie(); else clearLottie();
@@ -461,7 +482,7 @@
     lottieInst = lottie.loadAnimation({
       container,
       renderer: 'svg',
-      loop: false,
+      loop: true,
       autoplay: true,
       path: '/assets/level up.json',
     });
