@@ -239,8 +239,9 @@
   async function openBreakdownModal(m) {
     const modal = $('#modal');
     const inner = $('#modalCard');
-    inner.innerHTML = `<div class="modal-header"><h2>${esc(m.teamAName)} vs ${esc(m.teamBName)}</h2><p class="modal-note">Final score: ${m.scoreA}–${m.scoreB}</p></div><p>Loading…</p>`;
+    inner.innerHTML = `<div class="modal-header"><h2>${esc(m.teamAName)} vs ${esc(m.teamBName)}</h2><p class="modal-note">Final score: ${m.scoreA}–${m.scoreB}</p><button class="modal-close" id="breakdownClose" aria-label="Close">✕</button></div><div class="modal-body"><p>Loading…</p></div>`;
     modal.classList.remove('hidden');
+    $('#breakdownClose').onclick = () => modal.classList.add('hidden');
     try {
       const { rows } = await api(`/matches/${m.id}/breakdown`);
       if (!rows.length) { inner.querySelector('p:last-child').textContent = 'No predictions made.'; return; }
@@ -255,12 +256,17 @@
         return `<tr><td>${avatar} ${esc(r.name)}</td><td>${r.score_a}–${r.score_b}</td><td class="${r.winner === actualOutcome ? 'correct' : 'wrong'}">${correct}</td><td>${pts}</td></tr>`;
       }).join('');
       inner.innerHTML = `
-        <div class="modal-header"><h2>${esc(m.teamAName)} vs ${esc(m.teamBName)}</h2><p class="modal-note">Final score: ${m.scoreA}–${m.scoreB} · ${rows.length} predictions</p></div>
-        <table class="breakdown-table">
-          <thead><tr><th>Player</th><th>Pick</th><th>Result</th><th>Pts</th></tr></thead>
-          <tbody>${rows_html}</tbody>
-        </table>
-        <button class="btn ghost" id="breakdownClose" style="margin-top:1rem">Close</button>`;
+        <div class="modal-header">
+          <h2>${esc(m.teamAName)} vs ${esc(m.teamBName)}</h2>
+          <p class="modal-note">Final score: ${m.scoreA}–${m.scoreB} · ${rows.length} predictions</p>
+          <button class="modal-close" id="breakdownClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <table class="breakdown-table">
+            <thead><tr><th>Player</th><th>Pick</th><th>Result</th><th>Pts</th></tr></thead>
+            <tbody>${rows_html}</tbody>
+          </table>
+        </div>`;
       $('#breakdownClose').onclick = () => modal.classList.add('hidden');
     } catch (e) { inner.querySelector('p:last-child').textContent = 'Failed to load.'; }
   }
@@ -268,7 +274,7 @@
   // ---------- Prediction modal ----------
   function openPredictionModal(m) {
     const p = m.myPrediction;
-    $('#modalCard').innerHTML = `
+    $('#modalCard').innerHTML = `<div class="modal-body" style="padding-top:20px">
       <h3>Your prediction</h3>
       <div class="match-row" style="margin-bottom:16px">
         <div class="team"><span class="flag">${flagHtml(m.teamAFlag)}</span><span class="tname">${esc(m.teamAName)}</span></div>
@@ -291,7 +297,8 @@
       <div class="modal-actions">
         <button class="btn ghost" id="predCancel">Cancel</button>
         <button class="btn orange" id="predSave">Save prediction</button>
-      </div>`;
+      </div>
+    </div>`;
     $('#modal').classList.remove('hidden');
 
     let winner = p?.winner || null;
@@ -394,18 +401,15 @@
       ${feed.finished.length ? `<div class="section-label"><ion-icon name="checkmark-done"></ion-icon>Recent results</div>${feed.finished.slice(0, 3).map(m => matchCard(m, { withActions: false })).join('')}` : ''}
 
       <div class="section-label"><ion-icon name="trophy"></ion-icon>Top 5 leaderboard</div>
-      <div class="card">${feed.top5.length ? feed.top5.map((r, i) => `
-        <div class="news-item"><b style="width:20px">${i + 1}</b>
-          <span style="flex:1">${esc(r.name)}</span>
-          <b class="lb-pts">${r.totalPoints}</b></div>`).join('')
+      <div class="card top5-card">${feed.top5.length ? feed.top5.map((r, i) => `
+        <div class="top5-row">
+          <div class="top5-rank ${['gold','silver','bronze'][i] || ''}">${['👑','🥈','🥉'][i] || (i + 1)}</div>
+          <span class="top5-name">${esc(r.name)}</span>
+          <b class="lb-pts">${r.totalPoints} pts</b>
+        </div>`).join('')
         : '<div class="empty">No points yet — make your predictions!</div>'}
-        <div style="text-align:center;margin-top:8px"><a href="#leaderboard" class="btn small ghost">Full leaderboard</a></div>
-      </div>
-
-      <div class="section-label"><ion-icon name="newspaper"></ion-icon>World Cup feed</div>
-      <div class="card">${feed.news.length ? feed.news.map(n => `
-        <div class="news-item"><span class="news-tag">${esc(n.tag)}</span>${esc(n.title)}</div>`).join('')
-        : '<div class="empty">Nothing to report yet.</div>'}</div>`;
+        <div style="text-align:center;margin-top:10px"><a href="#leaderboard" class="btn small ghost">Full leaderboard</a></div>
+      </div>`;
 
     bindPredictButtons(el, feed.today.map(withMyPred));
     schedulePoll();
@@ -492,7 +496,7 @@
     const data = await api(`/leaderboard?type=${lbTab}`);
     body.innerHTML = data.rows.length ? data.rows.map((r, i) => `
       <div class="lb-row ${r.id === me.id ? 'lb-me' : ''}">
-        <div class="lb-rank ${['gold','silver','bronze'][i] || ''}">${i + 1}</div>
+        <div class="lb-rank ${['gold','silver','bronze'][i] || ''}">${['👑','🥈','🥉'][i] || (i + 1)}</div>
         <img class="lb-avatar" src="${esc(r.profilePicture || avatarFallback(r.name))}" alt="">
         <div class="lb-main"><div class="lb-name">${esc(r.name)}</div>
           <div class="lb-sub">${flagHtml(r.favoriteTeamFlag, '')} ${esc(r.favoriteTeamName || '')}</div></div>
@@ -510,7 +514,7 @@
       <header class="page-head"><h2>Team supporters</h2><p>Who's backing whom at Retailcloud.</p></header>
       ${supported.length ? supported.map(t => `
         <div class="lb-row" data-team="${t.id}" style="cursor:pointer">
-          <span class="lb-avatar" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;overflow:hidden">${flagHtml(t.flag)}</span>
+          <span class="team-flag-badge">${flagHtml(t.flag)}</span>
           <div class="lb-main"><div class="lb-name">${esc(t.name)}</div>
             <div class="lb-sub">${t.supporters} fan${t.supporters === 1 ? '' : 's'}</div></div>
           <div class="lb-pts">${t.supporters} fans</div>

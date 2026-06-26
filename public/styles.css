@@ -359,14 +359,30 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
   padding: 10px 12px; margin-bottom: 8px;
 }
 .lb-rank {
-  width: 28px; height: 28px; border-radius: 9px; flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: .8rem; color: var(--muted-foreground);
+  font-weight: 800; font-size: .85rem; color: var(--muted-foreground);
   background: var(--muted); font-variant-numeric: tabular-nums;
 }
-.lb-rank.gold { background: #fef3c7; color: #b45309; }
-.lb-rank.silver { background: #f1f5f9; color: #475569; }
-.lb-rank.bronze { background: #fee9d9; color: #9a4a12; }
+.lb-rank.gold { background: linear-gradient(135deg,#fef9c3,#fde68a); font-size: 1rem; box-shadow: 0 2px 8px rgba(251,191,36,.35); }
+.lb-rank.silver { background: linear-gradient(135deg,#f1f5f9,#e2e8f0); font-size: 1rem; }
+.lb-rank.bronze { background: linear-gradient(135deg,#ffedd5,#fed7aa); font-size: 1rem; }
+/* Top-5 mini leaderboard on home */
+.top5-card { padding: 10px 12px 12px; }
+.top5-row { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--border); }
+.top5-row:last-of-type { border-bottom: none; }
+.top5-rank {
+  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .82rem; font-weight: 800; color: var(--muted-foreground); background: var(--muted);
+}
+.top5-rank.gold { background: linear-gradient(135deg,#fef9c3,#fde68a); font-size: 1rem; box-shadow: 0 2px 6px rgba(251,191,36,.3); }
+.top5-rank.silver { background: linear-gradient(135deg,#f1f5f9,#e2e8f0); font-size: 1rem; }
+.top5-rank.bronze { background: linear-gradient(135deg,#ffedd5,#fed7aa); font-size: 1rem; }
+.top5-name { flex: 1; font-weight: 600; font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Team flag in supporters list — rectangular, not clipped circle */
+.team-flag-badge { width: 40px; height: 30px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+.team-flag-badge img { width: 40px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
 .lb-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--muted); flex-shrink: 0; }
 .lb-main { flex: 1; min-width: 0; }
 .lb-name { font-weight: 700; font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -411,11 +427,28 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
 }
 .modal-card {
   background: var(--card); border-radius: 1.5rem 1.5rem 0 0; width: 100%; max-width: 520px;
-  padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); max-height: 85dvh; overflow-y: auto;
+  max-height: 85dvh; display: flex; flex-direction: column; overflow: hidden;
+}
+.modal-header {
+  flex-shrink: 0; padding: 20px 18px 14px; border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.modal-header h2 { margin: 0 28px 4px 0; font-size: 1.05rem; font-weight: 800; color: var(--primary); }
+.modal-header .modal-note { margin: 0; }
+.modal-close {
+  position: absolute; top: 16px; right: 14px;
+  background: none; border: none; cursor: pointer; color: var(--muted-foreground);
+  font-size: 1.3rem; line-height: 1; padding: 4px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { color: var(--foreground); background: var(--muted); }
+.modal-body {
+  flex: 1; overflow-y: auto; padding: 0 18px calc(18px + env(safe-area-inset-bottom));
 }
 @media (min-width: 600px) {
   .modal { align-items: center; }
   .modal-card { border-radius: 1.5rem; border: 1px solid var(--border); }
+  .modal-body { padding-bottom: 18px; }
 }
 .modal-card h3 { margin: 0 0 16px; color: var(--primary); font-size: 1.05rem; font-weight: 800; }
 .modal-card .match-row { background: var(--pitch-grad); border-radius: 1rem; padding: 14px 10px; }
