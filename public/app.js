@@ -343,6 +343,13 @@
   function closeModal() { $('#modal').classList.add('hidden'); }
   $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
 
+  // ---------- Points info modal ----------
+  function openPointsModal() { $('#pointsModal').classList.remove('hidden'); }
+  function closePointsModal() { $('#pointsModal').classList.add('hidden'); }
+  $('#pointsModalClose').onclick = closePointsModal;
+  $('#pointsModal').addEventListener('click', (e) => { if (e.target.id === 'pointsModal') closePointsModal(); });
+  document.addEventListener('click', (e) => { if (e.target.id === 'openPointsModal') openPointsModal(); });
+
   // ---------- Avatar menu (topbar) ----------
   async function logout() {
     await api('/auth/logout', { method: 'POST' });
@@ -493,14 +500,32 @@
     const body = $('#matchesBody');
     {
       const { matches } = await api('/matches');
-      const byDate = {};
-      for (const m of matches) {
-        const d = fmtDate(m.kickoff);
-        (byDate[d] = byDate[d] || []).push(m);
+      if (!matches.length) {
+        body.innerHTML = '<div class="card empty">No matches yet. Admin needs to sync fixtures.</div>';
+        return;
       }
-      body.innerHTML = Object.entries(byDate).map(([d, ms]) =>
-        `<div class="date-head">${d}</div>${ms.map(m => matchCard(m)).join('')}`).join('')
-        || '<div class="card empty">No matches yet. Admin needs to sync fixtures.</div>';
+
+      const needsPred = matches.filter(m => m.status === 'upcoming' && !m.locked && !m.myPrediction);
+      const upcoming  = matches.filter(m => m.status === 'upcoming' && (m.locked || m.myPrediction));
+      const finished  = matches.filter(m => m.status === 'finished');
+
+      function byDateGroup(ms, reverse = false) {
+        const map = {};
+        for (const m of ms) { const d = fmtDate(m.kickoff); (map[d] = map[d] || []).push(m); }
+        const entries = Object.entries(map);
+        if (reverse) entries.reverse();
+        return entries.map(([d, ms]) => `<div class="date-head">${d}</div>${ms.map(m => matchCard(m)).join('')}`).join('');
+      }
+
+      let html = '';
+      if (needsPred.length)
+        html += `<div class="section-label needs-pred-label"><ion-icon name="football"></ion-icon> Predict now <span class="pred-count">${needsPred.length}</span></div>${needsPred.map(m => matchCard(m)).join('')}`;
+      if (upcoming.length)
+        html += `<div class="section-label"><ion-icon name="calendar"></ion-icon>Upcoming</div>${byDateGroup(upcoming)}`;
+      if (finished.length)
+        html += `<div class="section-label"><ion-icon name="checkmark-done"></ion-icon>Results</div>${byDateGroup(finished, true)}`;
+
+      body.innerHTML = html;
       bindPredictButtons(body, matches);
       schedulePoll();
     }
@@ -552,7 +577,7 @@
   async function renderLeaderboard() {
     const el = $('#view-leaderboard');
     el.innerHTML = `
-      <header class="page-head"><h2>Leaderboard</h2><p>Right result: 3 pts · Exact score: 8 pts</p></header>
+      <header class="page-head"><h2>Leaderboard</h2><p>Right result: 3 pts · Exact score: 8 pts &nbsp;<button class="pts-info-btn" id="openPointsModal">How it works</button></p></header>
       <div class="tabs">
         <button class="tab ${lbTab === 'overall' ? 'active' : ''}" data-t="overall"><ion-icon name="globe"></ion-icon> Overall</button>
         <button class="tab ${lbTab === 'team' ? 'active' : ''}" data-t="team"><ion-icon name="flag"></ion-icon> My team fans</button>

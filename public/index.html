@@ -84,6 +84,45 @@
       <div class="modal-card" id="modalCard"></div>
     </div>
 
+    <!-- Points info modal -->
+    <div id="pointsModal" class="modal points-modal hidden">
+      <div class="modal-card points-modal-card">
+        <div class="modal-header">
+          <h2>How points work</h2>
+          <p class="modal-note">Earn points by predicting match outcomes</p>
+          <button class="modal-close" id="pointsModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body pts-body">
+          <div class="pts-section">
+            <div class="pts-section-title">⚽ Group Stage</div>
+            <div class="pts-row"><div class="pts-badge pts-3">3 pts</div><div class="pts-desc"><strong>Right result</strong><span>Correct win or draw</span></div></div>
+            <div class="pts-row pts-row-best"><div class="pts-badge pts-8">8 pts</div><div class="pts-desc"><strong>Exact score</strong><span>Nail the precise scoreline</span></div></div>
+          </div>
+          <div class="pts-section">
+            <div class="pts-section-title">🏆 Knockout Rounds</div>
+            <div class="pts-row"><div class="pts-badge pts-3">3 pts</div><div class="pts-desc"><strong>Right winner</strong><span>No draws — pick who advances</span></div></div>
+            <div class="pts-row pts-row-best"><div class="pts-badge pts-8">8 pts</div><div class="pts-desc"><strong>Exact score</strong><span>Match the full-time scoreline</span></div></div>
+          </div>
+          <div class="pts-section pts-penalty-section">
+            <div class="pts-section-title">🎯 Penalty Shootouts</div>
+            <p class="pts-penalty-note">If a knockout match goes to penalties, predict <strong>the winning team</strong> — not the tied score. The scoreline shown is regular/extra time only.</p>
+            <div class="pts-example">
+              <div class="pts-eg-row"><span class="pts-eg-label">Match ends</span><span class="pts-eg-val">1 – 1 (AET)</span></div>
+              <div class="pts-eg-row"><span class="pts-eg-label">Argentina wins pens</span><span class="pts-eg-val">🇦🇷</span></div>
+              <div class="pts-eg-row pts-eg-good"><span class="pts-eg-label">✅ Pick Argentina win</span><span class="pts-eg-val pts-green">+3 pts</span></div>
+              <div class="pts-eg-row pts-eg-bad"><span class="pts-eg-label">❌ Pick France win</span><span class="pts-eg-val pts-red">0 pts</span></div>
+            </div>
+          </div>
+          <div class="pts-section pts-scoring-breakdown">
+            <div class="pts-section-title">📊 Score breakdown</div>
+            <div class="pts-calc-row"><span>Right result only</span><span class="pts-calc-val">3 pts</span></div>
+            <div class="pts-calc-row pts-calc-best"><span>Exact score (includes result)</span><span class="pts-calc-val">3 + 5 = <strong>8 pts</strong></span></div>
+            <div class="pts-calc-row"><span>Wrong result</span><span class="pts-calc-val pts-red">0 pts</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Rank change modal -->
     <div id="rankModal" class="rank-modal hidden">
       <div class="rank-modal-card">
