@@ -443,9 +443,21 @@
     if (rankModalShownThisSession || currentRank == null) return;
     rankModalShownThisSession = true;
     const key = `rank_${me.id}`;
+    const ptsKey = `pts_${me.id}`;
     const prev = Number(localStorage.getItem(key));
+    const prevPts = Number(localStorage.getItem(ptsKey));
+    const curPts = Number(me.totalPoints) || 0;
+    const hadPrevPts = localStorage.getItem(ptsKey) !== null;
     localStorage.setItem(key, currentRank);
-    if (!prev || prev === currentRank) return;
+    localStorage.setItem(ptsKey, curPts);
+    if (!prev) return;
+    // Same rank but gained points → "Good streak" (top 10 only)
+    if (prev === currentRank) {
+      if (currentRank <= 10 && hadPrevPts && curPts > prevPts) {
+        showStreakModal(currentRank, curPts - prevPts);
+      }
+      return;
+    }
     const up = currentRank < prev;
     const diff = Math.abs(prev - currentRank);
     const content = $('#rankModalContent');
@@ -487,6 +499,27 @@
       modal.classList.add('hidden');
       clearLottie();
     };
+  }
+
+  function showStreakModal(rank, gained) {
+    const content = $('#rankModalContent');
+    const avatar = me.profilePicture
+      ? `<img src="${esc(me.profilePicture)}" class="rm-tile-avatar">`
+      : `<span class="rm-tile-avatar rm-tile-fallback">${esc(me.name[0])}</span>`;
+    content.innerHTML = `
+      <h2 class="rm-title">On fire! 🔥</h2>
+      <div class="rm-overtake-wrap">
+        <div class="rm-ot-tile rm-ot-user">
+          <span class="rm-tile-pos rm-tile-pos-new">#${rank}</span>
+          ${avatar}
+          <span class="rm-tile-name">${esc(me.name)}</span>
+        </div>
+      </div>
+      <p class="rm-sub">+<b>${gained}</b> pts · held <b>#${rank}</b>. Keep it up! 🔥</p>`;
+    const modal = $('#rankModal');
+    modal.classList.remove('hidden');
+    launchLottie('/assets/Fire.json');
+    $('#rankModalClose').onclick = () => { modal.classList.add('hidden'); clearLottie(); };
   }
 
   let lottieInst = null;
@@ -673,7 +706,7 @@
           ? `<span class="muted">Result ${p.resultA ?? 0}–${p.resultB ?? 0}${pens}</span>`
           : `<span class="muted">${p.status}</span>`;
         const pts = finished
-          ? `<b class="lb-pts ${p.points === 0 ? 'muted' : ''}" style="${p.points >= 8 ? 'color:#16a34a' : ''}">${p.points} pt${p.points === 1 ? '' : 's'}</b>`
+          ? `<b class="lb-pts ${p.points === 0 ? 'muted' : ''}" style="${p.points >= 8 ? 'color:#16a34a' : ''}">${p.points > 0 ? '+' : ''}${p.points} pt${p.points === 1 ? '' : 's'}</b>`
           : `<span class="muted">—</span>`;
         return `<div class="news-item" style="align-items:flex-start;gap:8px">
           <div style="flex:1">
