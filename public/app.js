@@ -457,7 +457,7 @@
       <h2 class="rm-title">You moved up! 🎉</h2>
       <div class="rm-overtake-wrap">
         <div class="rm-ot-tile rm-ot-other rm-ot-other-down">
-          <span class="rm-tile-pos">#${currentRank}</span>
+          <span class="rm-tile-pos">#${prev}</span>
           ${ghostTile}
         </div>
         <div class="rm-ot-tile rm-ot-user rm-ot-user-up">
@@ -677,7 +677,7 @@
           : `<span class="muted">—</span>`;
         return `<div class="news-item" style="align-items:flex-start;gap:8px">
           <div style="flex:1">
-            <div>${flagHtml(p.teamAFlag)} ${esc(p.teamAName)} <b>${p.scoreA}–${p.scoreB}</b> ${esc(p.teamBName)} ${flagHtml(p.teamBFlag)}</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="st-flag">${flagHtml(p.teamAFlag)}</span> ${esc(p.teamAName)} <b>${p.scoreA}–${p.scoreB}</b> ${esc(p.teamBName)} <span class="st-flag">${flagHtml(p.teamBFlag)}</span></div>
             <div class="lb-sub">${esc(p.stage || '')} · ${fmtDate(p.kickoff)} · ${result}</div>
           </div>
           ${pts}
