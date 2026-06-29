@@ -673,7 +673,7 @@
           ? `<span class="muted">Result ${p.resultA ?? 0}–${p.resultB ?? 0}${pens}</span>`
           : `<span class="muted">${p.status}</span>`;
         const pts = finished
-          ? `<b class="lb-pts ${p.points >= 8 ? 'gold' : p.points > 0 ? '' : 'muted'}">${p.points} pt${p.points === 1 ? '' : 's'}</b>`
+          ? `<b class="lb-pts ${p.points === 0 ? 'muted' : ''}" style="${p.points >= 8 ? 'color:#16a34a' : ''}">${p.points} pt${p.points === 1 ? '' : 's'}</b>`
           : `<span class="muted">—</span>`;
         return `<div class="news-item" style="align-items:flex-start;gap:8px">
           <div style="flex:1">
@@ -696,7 +696,7 @@
         </div>
         <h3 style="margin:0 0 6px">Predictions</h3>
         <div style="max-height:50vh;overflow:auto">
-          ${predictions.length ? predictions.map(predRow).join('') : '<div class="card empty">No predictions yet.</div>'}
+          ${predictions.length ? predictions.map(predRow).join('') : '<div class="card empty">No scored matches yet.</div>'}
         </div>
         <div class="modal-actions"><button class="btn ghost" id="playerClose">Close</button></div>
       </div>`;

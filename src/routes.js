@@ -217,16 +217,15 @@ router.get('/users/:id', (req, res) => {
     JOIN matches m ON m.id = p.match_id
     JOIN teams ta ON ta.id = m.team_a_id
     JOIN teams tb ON tb.id = m.team_b_id
-    WHERE p.employee_id = ?
+    WHERE p.employee_id = ? AND m.status = 'finished'
     ORDER BY m.kickoff DESC
   `).all(req.params.id);
 
-  const scored = predictions.filter(p => p.status === 'finished');
-  const exact = scored.filter(p => p.points >= 8).length;
+  const exact = predictions.filter(p => p.points >= 8).length;
   res.json({
     user,
     predictions,
-    stats: { totalPredictions: predictions.length, scoredMatches: scored.length, exactScores: exact },
+    stats: { totalPredictions: predictions.length, scoredMatches: predictions.length, exactScores: exact },
   });
 });
 
