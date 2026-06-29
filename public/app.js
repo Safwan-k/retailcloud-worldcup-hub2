@@ -296,7 +296,7 @@
         <span class="dash">–</span>
         <input id="predB" type="number" min="0" max="20" inputmode="numeric" value="${p ? p.scoreB : ''}" placeholder="0">
       </div>
-      ${isKnockout ? '' : '<p class="pred-draw-hint" id="drawHint"></p>'}
+      <p class="pred-draw-hint" id="drawHint"></p>
       <p class="modal-note">
         ${isKnockout ? 'Knockout: pick the winner. Right winner: <b>3 pts</b> · Exact score: <b>8 pts</b>' : 'Right result: <b>3 pts</b> · Exact score: <b>8 pts</b>'}
       </p>
@@ -315,28 +315,18 @@
       const isDraw = aFilled && bFilled && av === bv;
       $('#pickA').classList.toggle('pred-team-selected', winner === 'A');
       $('#pickB').classList.toggle('pred-team-selected', winner === 'B');
-      if (!isKnockout) {
+      const hint = $('#drawHint');
+      if (isKnockout) {
+        if (hint) hint.textContent = isDraw ? (winner ? '🤝 Draw — advances on penalties' : '🤝 Draw — tap a flag to pick who advances') : '';
+      } else {
         $('#pickA').classList.toggle('pred-team-draw', isDraw);
         $('#pickB').classList.toggle('pred-team-draw', isDraw);
-        const hint = $('#drawHint');
         if (hint) hint.textContent = isDraw ? '🤝 Draw' : '';
       }
     }
 
-    $('#pickA').onclick = () => {
-      const b = $('#predB'), a = $('#predA');
-      const bv = b.value === '' ? 0 : Number(b.value);
-      a.value = bv + 1;
-      if (b.value === '') b.value = 0;
-      winner = 'A'; paint();
-    };
-    $('#pickB').onclick = () => {
-      const a = $('#predA'), b = $('#predB');
-      const av = a.value === '' ? 0 : Number(a.value);
-      b.value = av + 1;
-      if (a.value === '') a.value = 0;
-      winner = 'B'; paint();
-    };
+    $('#pickA').onclick = () => { winner = 'A'; paint(); };
+    $('#pickB').onclick = () => { winner = 'B'; paint(); };
 
     function syncWinnerFromScore() {
       const av = Number($('#predA').value), bv = Number($('#predB').value);
@@ -353,7 +343,7 @@
     $('#predSave').onclick = async () => {
       const a = $('#predA').value, b = $('#predB').value;
       if (a === '' || b === '') { toast('Enter a score for both teams.', true); return; }
-      if (isKnockout && Number(a) === Number(b)) { toast('Knockout match — pick a winning team by tapping their flag.', true); return; }
+      if (isKnockout && Number(a) === Number(b) && !winner) { toast('Knockout draw — tap a flag to pick who advances on penalties.', true); return; }
       const effectiveWinner = winner || (Number(a) > Number(b) ? 'A' : Number(b) > Number(a) ? 'B' : 'D');
       try {
         await api('/predictions', { method: 'POST', body: { matchId: m.id, winner: effectiveWinner, scoreA: Number(a), scoreB: Number(b) } });
@@ -660,13 +650,62 @@
     const body = $('#lbBody');
     const data = await api(`/leaderboard?type=${lbTab}`);
     body.innerHTML = data.rows.length ? data.rows.map((r, i) => `
-      <div class="lb-row ${r.id === me.id ? 'lb-me' : ''}">
+      <div class="lb-row ${r.id === me.id ? 'lb-me' : ''}" data-uid="${r.id}" style="cursor:pointer">
         <div class="lb-rank ${['gold','silver','bronze'][i] || ''}">${['👑','🥈','🥉'][i] || (i + 1)}</div>
         <img class="lb-avatar" src="${esc(r.profilePicture || avatarFallback(r.name))}" alt="">
         <div class="lb-main"><div class="lb-name">${esc(r.name)}</div>
           <div class="lb-sub">${flagHtml(r.favoriteTeamFlag, '')} ${esc(r.favoriteTeamName || '')}</div></div>
         <div class="lb-pts">${r.totalPoints}</div>
       </div>`).join('') : '<div class="card empty">Nobody on this board yet.</div>';
+    body.querySelectorAll('[data-uid]').forEach(row =>
+      row.onclick = () => openPlayerModal(row.dataset.uid));
+  }
+
+  async function openPlayerModal(id) {
+    $('#modalCard').innerHTML = `<div class="modal-body" style="padding-top:20px"><p>Loading…</p></div>`;
+    $('#modal').classList.remove('hidden');
+    try {
+      const { user, predictions, stats } = await api(`/users/${id}`);
+      const predRow = (p) => {
+        const finished = p.status === 'finished';
+        const pens = p.penaltyA != null ? ` <span class="muted">(pens ${p.penaltyA}–${p.penaltyB})</span>` : '';
+        const result = finished
+          ? `<span class="muted">Result ${p.resultA ?? 0}–${p.resultB ?? 0}${pens}</span>`
+          : `<span class="muted">${p.status}</span>`;
+        const pts = finished
+          ? `<b class="lb-pts ${p.points >= 8 ? 'gold' : p.points > 0 ? '' : 'muted'}">${p.points} pt${p.points === 1 ? '' : 's'}</b>`
+          : `<span class="muted">—</span>`;
+        return `<div class="news-item" style="align-items:flex-start;gap:8px">
+          <div style="flex:1">
+            <div>${flagHtml(p.teamAFlag)} ${esc(p.teamAName)} <b>${p.scoreA}–${p.scoreB}</b> ${esc(p.teamBName)} ${flagHtml(p.teamBFlag)}</div>
+            <div class="lb-sub">${esc(p.stage || '')} · ${fmtDate(p.kickoff)} · ${result}</div>
+          </div>
+          ${pts}
+        </div>`;
+      };
+      $('#modalCard').innerHTML = `<div class="modal-body" style="padding-top:20px">
+        <div class="profile-head">
+          <img src="${esc(user.profilePicture || avatarFallback(user.name))}" alt="">
+          <div><div class="pname">${esc(user.name)}</div>
+            <div class="pmail">${flagHtml(user.favoriteTeamFlag, '')} ${esc(user.favoriteTeamName || '')}</div></div>
+        </div>
+        <div class="pred-teams" style="justify-content:space-around;text-align:center;margin:6px 0 14px">
+          <div><div class="lb-pts">${user.totalPoints}</div><div class="lb-sub">Points</div></div>
+          <div><div class="lb-pts">${stats.scoredMatches}</div><div class="lb-sub">Scored</div></div>
+          <div><div class="lb-pts">${stats.exactScores}</div><div class="lb-sub">Exact</div></div>
+        </div>
+        <h3 style="margin:0 0 6px">Predictions</h3>
+        <div style="max-height:50vh;overflow:auto">
+          ${predictions.length ? predictions.map(predRow).join('') : '<div class="card empty">No predictions yet.</div>'}
+        </div>
+        <div class="modal-actions"><button class="btn ghost" id="playerClose">Close</button></div>
+      </div>`;
+      $('#playerClose').onclick = closeModal;
+    } catch (e) {
+      $('#modalCard').innerHTML = `<div class="modal-body" style="padding-top:20px"><p>Failed to load.</p>
+        <div class="modal-actions"><button class="btn ghost" id="playerClose">Close</button></div></div>`;
+      $('#playerClose').onclick = closeModal;
+    }
   }
 
   // ---------- Supporters ----------

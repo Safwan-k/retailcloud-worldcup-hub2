@@ -400,6 +400,8 @@ ion-icon { vertical-align: -2px; flex-shrink: 0; }
 .lb-sub { font-size: .72rem; color: var(--muted-foreground); display: flex; align-items: center; gap: 4px; }
 .lb-sub img { width: 14px; height: 14px; border-radius: 50%; object-fit: cover; }
 .lb-pts { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted-foreground); font-size: .72rem; }
+.lb-pts.muted { color: var(--muted-foreground); font-weight: 600; }
 .lb-me { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(242, 96, 12, .18); }
 
 /* ---------- Journey / feed ---------- */

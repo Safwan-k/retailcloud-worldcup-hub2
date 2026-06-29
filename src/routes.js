@@ -195,6 +195,41 @@ router.get('/leaderboard', (req, res) => {
   res.json({ type: 'overall', rows });
 });
 
+// ---------- Player profile (public) ----------
+router.get('/users/:id', (req, res) => {
+  const user = db.prepare(`
+    SELECT e.id, e.name, e.department, e.location, e.profile_picture AS profilePicture,
+           e.total_points AS totalPoints, e.favorite_team_id AS favoriteTeamId,
+           t.name AS favoriteTeamName, t.flag AS favoriteTeamFlag
+    FROM employees e LEFT JOIN teams t ON t.id = e.favorite_team_id
+    WHERE e.id = ?
+  `).get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+
+  const predictions = db.prepare(`
+    SELECT p.match_id AS matchId, p.winner, p.score_a AS scoreA, p.score_b AS scoreB, p.points,
+           m.kickoff, m.stage, m.status,
+           m.score_a AS resultA, m.score_b AS resultB,
+           m.penalty_a AS penaltyA, m.penalty_b AS penaltyB,
+           ta.name AS teamAName, ta.flag AS teamAFlag,
+           tb.name AS teamBName, tb.flag AS teamBFlag
+    FROM predictions p
+    JOIN matches m ON m.id = p.match_id
+    JOIN teams ta ON ta.id = m.team_a_id
+    JOIN teams tb ON tb.id = m.team_b_id
+    WHERE p.employee_id = ?
+    ORDER BY m.kickoff DESC
+  `).all(req.params.id);
+
+  const scored = predictions.filter(p => p.status === 'finished');
+  const exact = scored.filter(p => p.points >= 8).length;
+  res.json({
+    user,
+    predictions,
+    stats: { totalPredictions: predictions.length, scoredMatches: scored.length, exactScores: exact },
+  });
+});
+
 // ---------- Home feed ----------
 router.get('/feed', (req, res) => {
   refreshStatuses();
